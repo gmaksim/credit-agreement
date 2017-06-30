@@ -2,3 +2,4 @@
 .idea/misc.xml
 .idea/modules.xml
 TXT_files/credLineFile.txt
+*.pyc

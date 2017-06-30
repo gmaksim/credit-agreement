@@ -1,4 +1,3 @@
-#! main interface
 from tkinter import *
 from tkinter import messagebox
 import os
@@ -19,9 +18,9 @@ def credit_line_save():
 # def credit_line_date():
 #     # add function to insert current date
 
-root = Tk()
-root.title("Main")
-root.geometry("600x700+200+200")
+put = Tk()
+put.title("Main")
+put.geometry("600x700+200+200")
 
 creditLine_data = StringVar()
 creditLine_entry = Entry(textvariable=creditLine_data)
@@ -33,4 +32,4 @@ creditLine_btn.place(x=150, y=8)
 # creditLineDate_entry = Entry()
 # creditLineDate_entry.place(command=credit_line_date())
 
-root.mainloop()
+put.mainloop()
