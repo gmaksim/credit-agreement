@@ -1,8 +1,5 @@
 #! mode for view information
 from tkinter import *
-from tkinter import messagebox
-import os
-
 
 output = Tk()
 output.title("View mode")
