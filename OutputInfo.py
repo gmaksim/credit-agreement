@@ -1,38 +1,61 @@
 #! mode for view information
 from tkinter import *
-
 output = Tk()
 output.title("View mode")
 output.geometry("600x700+200+200")
 
+
 def open_file():
     with open('TXT_files//credLineFile.txt', 'r') as file:
-        allLine = file.readlines()
-        lineListBox = Listbox()
+        all_line = file.readlines()
+        full_list_box = Listbox()  # make a listbox with full info (name + date)
+        for i in all_line:
+            full_list_box.insert(END, i)
 
-        for i in allLine:
-            lineListBox.insert(END, i)
-        lineListBox.grid(row=0, column=0)
+        begin = 0  # start position of listbox (to separate name and date)
+        end = full_list_box.size()  # final position of listbox
 
-        tex = Text(output, width=20, height=3, font="12", wrap=WORD)
-        tex.grid(row=0, column=2, padx=20, pady=10)
+        global cut_list_box  # (Q) that's bad, (D) need to fix it later
+        cut_list_box = Listbox()
+        cut_list_box.place(relx=.12, rely=.1, height=130, width=130)
 
-        def push_left_button(WTF):
+        while begin != end:
+            cut_data = full_list_box.get(begin)
+            cut_list_box.insert(END, cut_data)
+            begin += 2  # (!offset)
 
-            whtSelect = lineListBox.curselection()
-            b = lineListBox.index(whtSelect)
-            b = int(b)
-
-            if b == 1:
-                tex.delete(1.0, END)
-                tex.insert(END, "Some information")
-            else:
-                tex.delete(1.0, END)
-                tex.insert(END, "nothing here")
-
-        lineListBox.bind('<<ListboxSelect>>', push_left_button)
         file.close()
 
 
-open_file()
+def open_file2(start, finish):
+    with open('TXT_files//Part2_credLineFile.txt', 'r') as file2:
+        all_line_2 = file2.readlines()
+        full_list_box_2 = Listbox()
+        for i in all_line_2:
+            full_list_box_2.insert(END, i)
+        full_list_box_2.place(relx=.30, rely=.1, height=130, width=130)
+
+        all_line_3 = full_list_box_2.get(start, finish)
+        for i in all_line_3:
+            full_list_box_2.insert(0, i)
+        full_list_box_2.delete(2, END)  # (!offset) delete all elements after 2 row
+
+        file2.close()
+
+
+def push_left_button(nothing):
+    what_select = cut_list_box.curselection()
+    start = cut_list_box.index(what_select)
+    start = int(start)
+    finish = start + start + 1  # (!offset) make a finish index of another file
+    open_file2(start, finish)
+
+
+def main():
+    open_file()
+    full_list_box_2 = Listbox()
+    full_list_box_2.place(relx=.30, rely=.1, height=130, width=130)
+    cut_list_box.bind('<<ListboxSelect>>', push_left_button)
+
+main()
 output.mainloop()
