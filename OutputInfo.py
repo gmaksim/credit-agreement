@@ -6,7 +6,7 @@ output.geometry("600x700+200+200")
 
 
 def open_file():
-    with open('TXT_files//credLineFile.txt', 'r') as file:
+    with open('DATA//00_names.txt', 'r') as file:
         all_line = file.readlines()
         full_list_box = Listbox()  # make a listbox with full info (name + date)
         for i in all_line:
@@ -28,7 +28,7 @@ def open_file():
 
 
 def open_file2(start, finish):
-    with open('TXT_files//Part2_credLineFile.txt', 'r') as file2:
+    with open('DATA//01_agree.txt', 'r') as file2:
         all_line_2 = file2.readlines()
         full_list_box_2 = Listbox()
         for i in all_line_2:
