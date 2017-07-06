@@ -75,7 +75,7 @@ labelDate = Label(text="Date", fg="#eee", bg="#333")
 labelDate.place(relx=.01, rely=.15, height=25, width=60)
 labelAgreement = Label(text="Agreement", fg="#eee", bg="#333")
 labelAgreement.place(relx=.01, rely=.20, height=25, width=60)
-labelAgrDate = Label(text="Passport", fg="#eee", bg="#333")
+labelAgrDate = Label(text="Agr. date", fg="#eee", bg="#333")
 labelAgrDate.place(relx=.01, rely=.25, height=25, width=60)
 
 get_current_date()

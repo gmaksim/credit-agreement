@@ -3,7 +3,6 @@ from tkinter import messagebox
 from datetime import date
 import os
 
-
 # class for pledgor/guarantor (to use in second step)
 class PledgorGuarantor:
     inFuture = 'addItLater'
@@ -47,16 +46,13 @@ def make_clients_folders(credit_line_name_imp, credit_line_agreement_imp):
             folder = folders_to_create[z]
             os.mkdir(folder)
             z += 1
-        global dirs  # ma bad, ma bad :( (D) important to fix it (!)
-        dirs = 'CLIENTS' + '//' + credit_line_name_imp + '//' + credit_line_agreement_imp
     else:
         print('realization for additional agreement (later)')
+    global dirs_way
+    dirs_way = 'CLIENTS' + '//' + credit_line_name_imp + '//' + credit_line_agreement_imp
 
 
 def dirs_to_analyze():
-    y = str(dirs)
-    print(y)
-    q = os.listdir(y)
-    print(q)
-
-
+    dirs_way = 'C:'  # (!magic) I do not have many thoughts how it fixed 'winerror3', but it works!
+    rr = os.listdir(path=dirs_way)
+    print(rr)

@@ -2,7 +2,7 @@
 from tkinter import *
 
 #! (!) you have a 2 global variables (!)
-#! dirs, cut_list_box
+#! dirs_way, cut_list_box
 
 root = Tk()
 root.title("Main")
