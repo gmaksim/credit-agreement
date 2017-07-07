@@ -4,9 +4,10 @@ from tkinter import messagebox
 from datetime import date
 import os
 import PutInfo_pt2
+
 put = Tk()
 put.title("Add new information. Part 1")
-put.geometry("600x700+200+200")
+put.geometry("600x700+100+100")
 
 
 def make_folders_and_files():
@@ -23,24 +24,32 @@ def make_folders_and_files():
 
 
 def save_and_step_2():
-    cred_line_fle = open('DATA//00_names.txt', 'a')
-    cred_line_fle.write(str(creditLine_name.get()))
-    cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
-    cred_line_fle.write(str(creditLine_date.get()))
-    cred_line_fle.write(str('\n'))
-    cred_line_fle.close()
-
-    cred_line_fle = open('DATA//01_agree.txt', 'a')
-    cred_line_fle.write(str(creditLine_agreement.get()))
-    cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
-    cred_line_fle.write(str(creditLine_date.get()))
-    cred_line_fle.write(str('\n'))
-    cred_line_fle.close()
-
     credit_line_name_imp = str(creditLine_name.get())
     credit_line_agreement_imp = str(creditLine_agreement.get())
-    put.destroy()
-    PutInfo_pt2.step_2_save_and_step_3(credit_line_name_imp, credit_line_agreement_imp)
+    len1 = len(credit_line_name_imp)
+    len2 = len(credit_line_agreement_imp)
+
+    if len1+len2 == 0:
+        messagebox.showinfo('Information', 'Please type name and # of agreement')
+    elif len1 <= 0 or len2 <= 0:
+        messagebox.showinfo('Information', 'Please type name or # of agreement')
+    else:
+        cred_line_fle = open('DATA//00_names.txt', 'a')
+        cred_line_fle.write(str(creditLine_name.get()))
+        cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
+        cred_line_fle.write(str(creditLine_date.get()))
+        cred_line_fle.write(str('\n'))
+        cred_line_fle.close()
+
+        cred_line_fle = open('DATA//01_agree.txt', 'a')
+        cred_line_fle.write(str(creditLine_agreement.get()))
+        cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
+        cred_line_fle.write(str(creditLine_date.get()))
+        cred_line_fle.write(str('\n'))
+        cred_line_fle.close()
+
+        put.destroy()
+        PutInfo_pt2.step_2_save_and_step_3(credit_line_name_imp, credit_line_agreement_imp)
 
 
 def get_current_date():
