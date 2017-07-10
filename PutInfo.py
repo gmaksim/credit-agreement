@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import messagebox
 from datetime import date
 import os
+import sqlite3
 import PutInfo_pt2
 
 put = Tk()
@@ -10,17 +11,15 @@ put.title("Add new information. Part 1")
 put.geometry("600x700+100+100")
 
 
-def make_folders_and_files():
-    b = os.path.exists('DATA')  # (D) make a check with 'file exist'
+def make_db():
+    b = os.path.exists('DATA')
     if b is False:
         os.mkdir('DATA')
         messagebox.showinfo('Information', 'DATA folder created')
-        q = open('DATA//00_names.txt', 'w')
-        messagebox.showinfo('Information', '00_names created')
-        q.close()
-        z = open('DATA//01_agree.txt', 'w')
-        messagebox.showinfo('Information', '01_agree created')
-        z.close()
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
+        cursor.execute('CREATE TABLE ANAME (a_name_id Name PRIMARY KEY, Name text NOT NULL, Date text NOT NULL);')
+        conn.close()
 
 
 def save_and_step_2():
@@ -34,22 +33,20 @@ def save_and_step_2():
     elif len1 <= 0 or len2 <= 0:
         messagebox.showinfo('Information', 'Please type name or # of agreement')
     else:
-        cred_line_fle = open('DATA//00_names.txt', 'a')
-        cred_line_fle.write(str(creditLine_name.get()))
-        cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
-        cred_line_fle.write(str(creditLine_date.get()))
-        cred_line_fle.write(str('\n'))
-        cred_line_fle.close()
 
-        cred_line_fle = open('DATA//01_agree.txt', 'a')
-        cred_line_fle.write(str(creditLine_agreement.get()))
-        cred_line_fle.write(str('\n'))  # (Q) maybe can realize it in another way?
-        cred_line_fle.write(str(creditLine_date.get()))
-        cred_line_fle.write(str('\n'))
-        cred_line_fle.close()
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
 
-        put.destroy()
-        PutInfo_pt2.step_2_save_and_step_3(credit_line_name_imp, credit_line_agreement_imp)
+        a = str(creditLine_name.get())
+        b = str(creditLine_date.get())
+        c = str(creditLine_agreement.get())
+        d = str(creditLine_agr_date.get())
+        cursor.execute('INSERT INTO ANAME (Name, Date) VALUES (?, ?)', (a, b))
+
+        conn.commit()
+        conn.close()
+        # put.destroy()
+        # PutInfo_pt2.step_2_save_and_step_3()
 
 
 def get_current_date():
@@ -88,7 +85,7 @@ labelAgrDate = Label(text="Agr. date", fg="#eee", bg="#333")
 labelAgrDate.place(relx=.01, rely=.25, height=25, width=60)
 
 get_current_date()
-make_folders_and_files()
+make_db()
 creditLine_btn = Button(text='Save and next step', height=1, width=20, command=save_and_step_2)
 creditLine_btn.place(relx=.12, rely=.30, height=30, width=130)
 

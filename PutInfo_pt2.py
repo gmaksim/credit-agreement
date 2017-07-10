@@ -8,7 +8,7 @@ class PledgorGuarantor:
     inFuture = 'addItLater'
 
 
-def step_2_save_and_step_3(credit_line_name_imp, credit_line_agreement_imp):
+def step_2_save_and_step_3():
     put_step2 = Tk()
     put_step2.title("Add new information. Part 2")
     put_step2.geometry("600x700+100+100")
