@@ -1,9 +1,6 @@
 #! main interface
 from tkinter import *
 
-#! (!) you have a 2 global variables (!)
-#! dirs_way, cut_list_box
-
 root = Tk()
 root.title("Main")
 root.geometry("600x700+200+200")

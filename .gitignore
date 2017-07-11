@@ -1,6 +1,4 @@
 *.pyc
 *.xml
-*.txt
 *.iml
-*.csv
 *.sqlite

@@ -4,11 +4,11 @@ from tkinter import messagebox
 from datetime import date
 import os
 import sqlite3
-import PutInfo_pt2
+import bAddModeB
 
-put = Tk()
-put.title("Add new information. Part 1")
-put.geometry("600x700+100+100")
+add_mode_A = Tk()
+add_mode_A.title("Add new information. Part 1")
+add_mode_A.geometry("600x700+100+100")
 
 
 def make_db():
@@ -18,13 +18,16 @@ def make_db():
         messagebox.showinfo('Information', 'DATA folder created')
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
-        cursor.execute('CREATE TABLE ANAME (a_name_id Name PRIMARY KEY, Name text NOT NULL, Date text NOT NULL);')
+        cursor.execute('CREATE TABLE ANAME (id integer PRIMARY KEY, Name text NULL, Date text NULL, idSend integer NULL)')
+        cursor.execute('CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
         conn.close()
 
 
 def save_and_step_2():
     credit_line_name_imp = str(creditLine_name.get())
     credit_line_agreement_imp = str(creditLine_agreement.get())
+    credit_line_date_imp = str(creditLine_date.get())
+    credit_line_agrdate_imp = str(creditLine_agr_date.get())
     len1 = len(credit_line_name_imp)
     len2 = len(credit_line_agreement_imp)
 
@@ -33,20 +36,29 @@ def save_and_step_2():
     elif len1 <= 0 or len2 <= 0:
         messagebox.showinfo('Information', 'Please type name or # of agreement')
     else:
-
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
+        cursor.execute('SELECT idSend FROM ANAME')
+        number_id_res = cursor.fetchone()
 
-        a = str(creditLine_name.get())
-        b = str(creditLine_date.get())
-        c = str(creditLine_agreement.get())
-        d = str(creditLine_agr_date.get())
-        cursor.execute('INSERT INTO ANAME (Name, Date) VALUES (?, ?)', (a, b))
-
+        if number_id_res is None:
+            cursor.execute('INSERT INTO ANAME (Name, Date, idSend) VALUES (?, ?, ?)',
+                           (credit_line_name_imp, credit_line_date_imp, 1))
+            cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
+                           (credit_line_agreement_imp, credit_line_agrdate_imp, 1))
+        else:
+            cursor.execute('SELECT idSend FROM ANAME')
+            numbers_id_res = cursor.fetchall()
+            max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
+            last_number_id_res = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
+            cursor.execute('INSERT INTO ANAME (Name, Date, idSend) VALUES (?, ?, ?)',
+                           (credit_line_name_imp, credit_line_date_imp, last_number_id_res))
+            cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
+                           (credit_line_agreement_imp, credit_line_agrdate_imp, last_number_id_res))
         conn.commit()
         conn.close()
-        # put.destroy()
-        # PutInfo_pt2.step_2_save_and_step_3()
+        add_mode_A.destroy()
+        bAddModeB.main(credit_line_name_imp, credit_line_agreement_imp)
 
 
 def get_current_date():
@@ -89,4 +101,4 @@ make_db()
 creditLine_btn = Button(text='Save and next step', height=1, width=20, command=save_and_step_2)
 creditLine_btn.place(relx=.12, rely=.30, height=30, width=130)
 
-put.mainloop()
+add_mode_A.mainloop()

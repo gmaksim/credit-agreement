@@ -8,10 +8,10 @@ class PledgorGuarantor:
     inFuture = 'addItLater'
 
 
-def step_2_save_and_step_3():
-    put_step2 = Tk()
-    put_step2.title("Add new information. Part 2")
-    put_step2.geometry("600x700+100+100")
+def main(credit_line_name_imp, credit_line_agreement_imp):
+    add_mode_B = Tk()
+    add_mode_B.title("Add new information. Part 2")
+    add_mode_B.geometry("600x700+100+100")
 
     make_folder_in_step2()
     make_clients_folders(credit_line_name_imp, credit_line_agreement_imp)
@@ -36,7 +36,7 @@ def step_2_save_and_step_3():
     analyze_folders_btn = Button(text='Check files', height=1, width=20, command=dirs_to_analyze)
     analyze_folders_btn.place(relx=.08, rely=.25, height=30, width=130)
 
-    put_step2.mainloop()
+    add_mode_B.mainloop()
 
 
 def make_folder_in_step2():
@@ -116,5 +116,3 @@ def dirs_to_analyze():
 
 def add_attribute():
     print('all pass')
-
-
