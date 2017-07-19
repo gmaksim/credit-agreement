@@ -80,6 +80,10 @@ class AddMode:
                 'CREATE TABLE ANAME (id integer PRIMARY KEY, Name text NULL, Date text NULL, Type text NULL, idSend integer NULL)')
             cursor.execute(
                 'CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
+            cursor.execute(
+                'CREATE TABLE BDOCAGRE (id integer PRIMARY KEY, Application text NULL, ApprovalTran text NULL, '
+                'ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, MainContract text NULL, '
+                'OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
             conn.close()
 
     def save_start_info(self):
@@ -117,8 +121,25 @@ class AddMode:
                                (credit_line_agreement_imp, credit_line_agrdate_imp, last_number_id_res))
             conn.commit()
             conn.close()
-            root.destroy()
-            self.arrange_labels(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
+            self.create_new_window(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
+
+    def create_new_window(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
+        root.destroy()
+        root2 = Tk()
+        root2.title("Add new information. Part 2")
+        root2.geometry("600x700+100+100")
+        self.make_clients_folders(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
+
+        label_start = Label(text="Now you need to put files in folders")
+        label_start.place(relx=.01, rely=.01, height=60, width=250)
+
+        if credit_line_name_type == 'Organization':
+            self.arrange_labels(self.folders_org)
+        else:
+            self.arrange_labels(self.folders_entr)
+
+        analyze_folders_btn = Button(text='Check files', height=1, width=20, command=self.analyze_folders)
+        analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
 
     def make_clients_folders(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         b = os.path.exists('CLIENTS')
@@ -144,21 +165,7 @@ class AddMode:
         else:
             print('realization for additional agreement (later)')
 
-    def arrange_labels(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
-        add_mode_B = Tk()
-        add_mode_B.title("Add new information. Part 2")
-        add_mode_B.geometry("600x700+100+100")
-
-        self.make_clients_folders(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
-
-        label_start = Label(text="Now you need to put files in folders")
-        label_start.place(relx=.01, rely=.01, height=60, width=250)
-
-        if credit_line_name_type == 'Organization':
-            fldrs = self.folders_org
-        else:
-            fldrs = self.folders_entr
-
+    def arrange_labels(self, fldrs):
         z = 0
         y = .10
         x = len(fldrs)
@@ -172,11 +179,6 @@ class AddMode:
             labels_gc.append(label_color)
             z += 1
             y += .05
-
-        analyze_folders_btn = Button(text='Check files', height=1, width=20, command=self.analyze_folders)
-        analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
-
-        add_mode_B.mainloop()
 
     def analyze_folders(self):
         # to know add user file in folder or no
