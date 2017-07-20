@@ -54,11 +54,25 @@ class AddMode:
         self.creditLine_btn = Button(text='Save and next step', height=1, width=20, command=self.save_start_info)
         self.creditLine_btn.place(relx=.12, rely=.40, height=30, width=130)
 
+        # folders for type of name
         self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
                             'List of participants or shareholders register', 'Main contract',
                             'Official correspondence', 'Questionnaire')
         self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
                              'Official correspondence', 'Questionnaire', 'Russian passport')
+
+        # lists for labels name
+        self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
+        self.Application = ('Profile Date',)
+        self.ApprovalTran = ('meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary')
+        self.ConsentSpou = ('Date',)
+        self.ExtractUSRLE = ('date of issue', 'director', 'members of society')
+        self.ListParShare = ('list Date', 'Member №1', 'member share №1', 'Member №2', 'member share №2')
+        self.MainContract = ('The lender / guarantor', 'Borrower / Principal', 'beneficiary', 'contract number', 'Date of contract',
+                             'The amount of the transaction', 'Contract fee Period', 'Signatory of the Creditor', 'Signatory of the Borrower')
+        self.OfficialCorr = ('Sender', 'Destination', 'Outgoing №', 'Date Outgoing №', 'Incoming №', 'Date Incoming №')
+        self.Questionnaire = ('Profile Date',)
+        self.RussianPassp = ('Number',)
 
         self.get_current_date(self)
         self.make_db()
@@ -81,9 +95,9 @@ class AddMode:
             cursor.execute(
                 'CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
             cursor.execute(
-                'CREATE TABLE BDOCAGRE (id integer PRIMARY KEY, Application text NULL, ApprovalTran text NULL, '
-                'ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, MainContract text NULL, '
-                'OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
+                'CREATE TABLE BDOCAGRE (id integer PRIMARY KEY, Adjudications text NULL, Application text NULL, '
+                'ApprovalTran text NULL, ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, '
+                'MainContract text NULL, OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
             conn.close()
 
     def save_start_info(self):
@@ -91,7 +105,7 @@ class AddMode:
         credit_line_agreement_imp = str(self.creditLine_agreement.get())
         credit_line_date_imp = str(self.creditLine_date.get())
         credit_line_agrdate_imp = str(self.creditLine_agr_date.get())
-        credit_line_name_type = str(self.creditLine_type.get())
+        self.credit_line_name_type = str(self.creditLine_type.get())
         len1 = len(credit_line_name_imp)
         len2 = len(credit_line_agreement_imp)
 
@@ -107,7 +121,7 @@ class AddMode:
 
             if number_id_res is None:
                 cursor.execute('INSERT INTO ANAME (Name, Date, Type, idSend) VALUES (?, ?, ?, ?)',
-                               (credit_line_name_imp, credit_line_date_imp, credit_line_name_type, 1))
+                               (credit_line_name_imp, credit_line_date_imp, self.credit_line_name_type, 1))
                 cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
                                (credit_line_agreement_imp, credit_line_agrdate_imp, 1))
             else:
@@ -116,30 +130,12 @@ class AddMode:
                 max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
                 last_number_id_res = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
                 cursor.execute('INSERT INTO ANAME (Name, Date, Type, idSend) VALUES (?, ?, ?, ?)',
-                               (credit_line_name_imp, credit_line_date_imp, credit_line_name_type, last_number_id_res))
+                               (credit_line_name_imp, credit_line_date_imp, self.credit_line_name_type, last_number_id_res))
                 cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
                                (credit_line_agreement_imp, credit_line_agrdate_imp, last_number_id_res))
             conn.commit()
             conn.close()
-            self.create_new_window(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
-
-    def create_new_window(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
-        root.destroy()
-        root2 = Tk()
-        root2.title("Add new information. Part 2")
-        root2.geometry("600x700+100+100")
-        self.make_clients_folders(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
-
-        label_start = Label(text="Now you need to put files in folders")
-        label_start.place(relx=.01, rely=.01, height=60, width=250)
-
-        if credit_line_name_type == 'Organization':
-            self.arrange_labels(self.folders_org)
-        else:
-            self.arrange_labels(self.folders_entr)
-
-        analyze_folders_btn = Button(text='Check files', height=1, width=20, command=self.analyze_folders)
-        analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
+            self.create_new_window(credit_line_name_imp, credit_line_agreement_imp, self.credit_line_name_type)
 
     def make_clients_folders(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         b = os.path.exists('CLIENTS')
@@ -165,30 +161,48 @@ class AddMode:
         else:
             print('realization for additional agreement (later)')
 
-    def arrange_labels(self, fldrs):
+    def create_new_window(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
+        root.withdraw()
+        self.add_file_level = Toplevel()
+        self.add_file_level.title("Add new information. Part 2")
+        self.add_file_level.geometry("600x700+100+100")
+        self.make_clients_folders(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
+
+        label_start = Label(self.add_file_level, text="Now you need to put files in folders")
+        label_start.place(relx=.01, rely=.01, height=60, width=250)
+
+        if credit_line_name_type == 'Organization':
+            self.arrange_labels(self.folders_org, stepY=.05, place=self.add_file_level)
+        else:
+            self.arrange_labels(self.folders_entr, stepY=.05, place=self.add_file_level)
+
+        analyze_folders_btn = Button(self.add_file_level, text='Check files', height=1, width=20, command=self.add_attribute)  # analyze_folders
+        analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
+
+    def arrange_labels(self, fldrs, stepY, place):
         z = 0
         y = .10
         x = len(fldrs)
         labels_gc = []
         while z != x:
-            label_name = Label(text=fldrs[z], fg="#eee", bg="#333")
+            label_name = Label(place, text=fldrs[z], fg="#eee", bg="#333")
             label_name.place(relx=.01, rely=y, height=25, width=150)
-            label_color = Label(text='', fg="#eee", bg="#cccccc")
+            label_color = Label(place, text='', fg="#eee", bg="#cccccc")
             label_color.place(relx=.28, rely=y, height=25, width=40)
             labels_gc.append(label_name)
             labels_gc.append(label_color)
             z += 1
-            y += .05
+            y += stepY
 
     def analyze_folders(self):
-        # to know add user file in folder or no
+        # check add file or no (in folder) and make []
         file_exists = []
         dirs_without_docs = []
         work_dir = os.getcwd()
         z = 0
         all_dirs_list = os.listdir()
-        d = len(all_dirs_list)
-        while z != d:
+        len_dirs = len(all_dirs_list)
+        while z != len_dirs:
             curr_dir = all_dirs_list[z]
             os.chdir(curr_dir)
             file_in_folder = os.listdir()
@@ -200,7 +214,7 @@ class AddMode:
             os.chdir(work_dir)
             z += 1
 
-        # colour of labels (y/n file in folder)
+        # make colour of labels (y/n file in folder) by info in []
         def count():  # "static" count
             try:
                 count.a += 1
@@ -212,24 +226,13 @@ class AddMode:
             curr_color = file_exists[count()]
             return curr_color
 
-        q1 = Label(text='', fg="#eee", bg=make_color())
-        q1.place(relx=.28, rely=.10, height=25, width=40)
-        q2 = Label(text='', fg="#eee", bg=make_color())
-        q2.place(relx=.28, rely=.15, height=25, width=40)
-        q3 = Label(text='', fg="#eee", bg=make_color())
-        q3.place(relx=.28, rely=.20, height=25, width=40)
-        q4 = Label(text='', fg="#eee", bg=make_color())
-        q4.place(relx=.28, rely=.25, height=25, width=40)
-        q5 = Label(text='', fg="#eee", bg=make_color())
-        q5.place(relx=.28, rely=.30, height=25, width=40)
-        q6 = Label(text='', fg="#eee", bg=make_color())
-        q6.place(relx=.28, rely=.35, height=25, width=40)
-        q7 = Label(text='', fg="#eee", bg=make_color())
-        q7.place(relx=.28, rely=.40, height=25, width=40)
-
-        if d == 8:  # organization type it's 8 folders
-            q8 = Label(text='', fg="#eee", bg=make_color())
-            q8.place(relx=.28, rely=.45, height=25, width=40)
+        s = 0
+        y = .10
+        while s != len_dirs:
+            q1 = Label(text='', fg="#eee", bg=make_color())
+            q1.place(relx=.28, rely=y, height=25, width=40)
+            s += 1
+            y += .05
 
         # check for start add_attribute func
         null_documents = ['Adjudications', 'Official correspondence']
@@ -241,10 +244,79 @@ class AddMode:
         if dirs_without_docs == []:
             self.add_attribute()
         else:
-            print('no')
+            messagebox.showinfo('Information', 'Add all needed files, please')
 
     def add_attribute(self):
-        print('all pass')
+        self.add_file_level.withdraw()
+        self.attribute_level = Toplevel()
+        self.attribute_level.title("Add new information. Part 3")
+        self.attribute_level.geometry("600x700+100+100")
+
+        if self.credit_line_name_type == 'Organization':
+            self.arrange_labels(self.folders_org, stepY=.1, place=self.attribute_level)
+            self.arrange_attribute(self.folders_org, stepX=.10, stepY=.1, place=self.attribute_level)
+        else:
+            self.arrange_labels(self.folders_entr, stepY=.1, place=self.attribute_level)
+            self.arrange_attribute(self.folders_entr, stepX=.10, stepY=.1, place=self.attribute_level)
+
+    def arrange_attribute(self, fldrs, stepX, stepY, place):
+        def len_of_attribute(type):  # (!) fix it later
+            len_attrib = []
+            if type == 'org':
+                len_attrib.append(len(self.Adjudications))  # Aou
+                len_attrib.append(len(self.Application))  # Aou
+                len_attrib.append(len(self.ApprovalTran))  # o
+                len_attrib.append(len(self.ExtractUSRLE))  # o
+                len_attrib.append(len(self.ListParShare))  # o
+                len_attrib.append(len(self.MainContract))  # Aou
+                len_attrib.append(len(self.OfficialCorr))  # Aou
+                len_attrib.append(len(self.Questionnaire))  # Aou
+            else:
+                len_attrib.append(len(self.Adjudications))  # Aou
+                len_attrib.append(len(self.Application))  # Aou
+                len_attrib.append(len(self.ConsentSpou))  # U
+                len_attrib.append(len(self.MainContract))  # Aou
+                len_attrib.append(len(self.OfficialCorr))  # Aou
+                len_attrib.append(len(self.Questionnaire))  # Aou
+                len_attrib.append(len(self.RussianPassp))  # U
+            return len_attrib
+
+        z = 0
+        y = .15
+        x = .01
+        len_fldrs = len(fldrs)
+        type_send = 'none'
+        if len_fldrs == 8:
+            type_send = 'org'
+        labels_gc_2 = []
+
+        len_attrib = len_of_attribute(type=type_send)  # [5, 1, 4, 1, 3, 5, 9, 6, 1, 1]
+        print(len_attrib[0])
+
+        # for z in len_attrib:
+        #     self.attrib_data = StringVar()
+        #     self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
+        #     self.attrib_data_entry.place(relx=x, rely=y, height=25, width=30)
+        #     labels_gc_2.append(self.attrib_data_entry)
+        #     z += 1
+        #     x += stepX
+
+
+
+        # while z != len_fldrs:
+        #     len_attrib = len_of_attribute(type=type_send)  # [5, 1, 4, 1, 3, 5, 9, 6, 1, 1]
+        #     for z in len_attrib:
+        #         self.attrib_data = StringVar()
+        #         self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
+        #         self.attrib_data_entry.place(relx=x, rely=y, height=25, width=30)
+        #         labels_gc_2.append(self.attrib_data_entry)
+        #         z += 1
+        #         x += stepX
+        #         # y += stepY
+        #     z += 1
+        #     x += stepX
+        #     y += stepY
+
 
 if __name__ == "__main__":
     root = Tk()
