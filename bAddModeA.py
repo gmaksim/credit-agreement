@@ -54,14 +54,14 @@ class AddMode:
         self.creditLine_btn = Button(text='Save and next step', height=1, width=20, command=self.save_start_info)
         self.creditLine_btn.place(relx=.12, rely=.40, height=30, width=130)
 
-        # folders for type of name
+        # folders for type of name # (TO-DO) push it to DB and create execute-select
         self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
                             'List of participants or shareholders register', 'Main contract',
                             'Official correspondence', 'Questionnaire')
         self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
                              'Official correspondence', 'Questionnaire', 'Russian passport')
 
-        # lists for labels name
+        # lists for labels name  # (TO-DO) push it to DB and create execute-select
         self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
         self.Application = ('Profile Date',)
         self.ApprovalTran = ('meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary')
@@ -73,6 +73,22 @@ class AddMode:
         self.OfficialCorr = ('Sender', 'Destination', 'Outgoing №', 'Date Outgoing №', 'Incoming №', 'Date Incoming №')
         self.Questionnaire = ('Profile Date',)
         self.RussianPassp = ('Number',)
+
+        # lists to put in insert
+        self.sum_org_attr = (self.Adjudications + self.Application + self.ApprovalTran + self.ExtractUSRLE +
+                             self.ListParShare + self.MainContract + self.OfficialCorr + self.Questionnaire)
+        self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
+                              self.OfficialCorr + self.Questionnaire + self.RussianPassp)
+
+        # delete it after test
+        self.attr = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance', 'Profile Date',
+                           'meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary', 'Date',
+                           'date of issue', 'director', 'members of society', 'list Date', 'Member №1',
+                           'member share №1', 'Member №2', 'member share №2', 'The lender / guarantor',
+                           'Borrower / Principal', 'beneficiary', 'contract number', 'Date of contract',
+                           'The amount of the transaction', 'Contract fee Period', 'Signatory of the Creditor',
+                           'Signatory of the Borrower', 'Sender', 'Destination', 'Outgoing №', 'Date Outgoing №',
+                           'Incoming №', 'Date Incoming №', 'Profile Date', 'Number')
 
         self.get_current_date(self)
         self.make_db()
@@ -90,7 +106,7 @@ class AddMode:
             messagebox.showinfo('Information', 'DATA folder and DB file created')
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            cursor.execute(
+            cursor.execute(  # (TO-DO) make it right (executescript)
                 'CREATE TABLE ANAME (id integer PRIMARY KEY, Name text NULL, Date text NULL, Type text NULL, idSend integer NULL)')
             cursor.execute(
                 'CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
@@ -172,29 +188,29 @@ class AddMode:
         label_start.place(relx=.01, rely=.01, height=60, width=250)
 
         if credit_line_name_type == 'Organization':
-            self.arrange_labels(self.folders_org, stepY=.05, place=self.add_file_level)
+            self.arrange_labels(self.folders_org, stepX=.28, stepY=.05, place=self.add_file_level)
         else:
-            self.arrange_labels(self.folders_entr, stepY=.05, place=self.add_file_level)
+            self.arrange_labels(self.folders_entr, stepX=.28, stepY=.05, place=self.add_file_level)
 
-        analyze_folders_btn = Button(self.add_file_level, text='Check files', height=1, width=20, command=self.add_attribute)  # analyze_folders
+        analyze_folders_btn = Button(self.add_file_level, text='Check files', height=1, width=20, command=self.add_attribute)  # (IN TEST) CHANGE TO analyze_folders
         analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
 
-    def arrange_labels(self, fldrs, stepY, place):
+    def arrange_labels(self, fldrs, stepX, stepY, place):
         z = 0
         y = .10
-        x = len(fldrs)
+        x = len(fldrs)  # (TO-DO) check arrange_attribute, possible make func without fldrs?
         labels_gc = []
         while z != x:
             label_name = Label(place, text=fldrs[z], fg="#eee", bg="#333")
             label_name.place(relx=.01, rely=y, height=25, width=150)
             label_color = Label(place, text='', fg="#eee", bg="#cccccc")
-            label_color.place(relx=.28, rely=y, height=25, width=40)
+            label_color.place(relx=stepX, rely=y, height=25, width=40)
             labels_gc.append(label_name)
             labels_gc.append(label_color)
             z += 1
             y += stepY
 
-    def analyze_folders(self):
+    def analyze_folders(self):  # (TO-DO) make it right (this func too long and hard to understanding)
         # check add file or no (in folder) and make []
         file_exists = []
         dirs_without_docs = []
@@ -250,17 +266,27 @@ class AddMode:
         self.add_file_level.withdraw()
         self.attribute_level = Toplevel()
         self.attribute_level.title("Add new information. Part 3")
-        self.attribute_level.geometry("600x700+100+100")
+        self.attribute_level.geometry("820x700+100+100")
+
+        labelStart = Label(self.attribute_level, text="Add attributes for documents")
+        labelStart.place(relx=.01, rely=.01, height=60, width=250)
+
+        creditLine_btn = Button(self.attribute_level, text='Save and next step',
+                                height=1, width=20, command=self.save_attributes)
+        creditLine_btn.place(relx=.01, rely=.90, height=30, width=130)
 
         if self.credit_line_name_type == 'Organization':
-            self.arrange_labels(self.folders_org, stepY=.1, place=self.attribute_level)
-            self.arrange_attribute(self.folders_org, stepX=.10, stepY=.1, place=self.attribute_level)
+            self.arrange_labels(self.folders_org, stepX=.20, stepY=.1, place=self.attribute_level)
+            self.arrange_attribute(self.sum_org_attr, stepX=.11, stepY=.1, place=self.attribute_level)
         else:
-            self.arrange_labels(self.folders_entr, stepY=.1, place=self.attribute_level)
-            self.arrange_attribute(self.folders_entr, stepX=.10, stepY=.1, place=self.attribute_level)
+            self.arrange_labels(self.folders_entr, stepX=.20, stepY=.1, place=self.attribute_level)
+            self.arrange_attribute(self.sum_entr_attr, stepX=.15, stepY=.1, place=self.attribute_level)
 
-    def arrange_attribute(self, fldrs, stepX, stepY, place):
-        def len_of_attribute(type):  # (!) fix it later
+        self.attribute_level.mainloop()
+
+    def arrange_attribute(self, sum_attr, stepX, stepY, place):
+
+        def attribute_all_len(type):  # (TO-DO) do it shorter
             len_attrib = []
             if type == 'org':
                 len_attrib.append(len(self.Adjudications))  # Aou
@@ -281,44 +307,46 @@ class AddMode:
                 len_attrib.append(len(self.RussianPassp))  # U
             return len_attrib
 
-        z = 0
-        y = .15
-        x = .01
-        len_fldrs = len(fldrs)
+        # receive correct list with len all attribute
         type_send = 'none'
-        if len_fldrs == 8:
+        if self.credit_line_name_type == 'Organization':
             type_send = 'org'
+        attribute_len_list = attribute_all_len(type=type_send)
+
+        # arrange attribute in GUI and insert what's need type in entry
+        u = 0
+        y = .15
         labels_gc_2 = []
+        for i in attribute_len_list:
+            z = 0
+            x = .01
+            while z != i:
+                self.attrib_data = StringVar()
+                self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
+                self.attrib_data_entry.place(relx=x, rely=y, height=25, width=80)
+                labels_gc_2.append(self.attrib_data_entry)
+                z += 1
+                x += stepX
+                self.attrib_data_entry.insert(END, sum_attr[u])
+                u += 1
+            y += stepY
 
-        len_attrib = len_of_attribute(type=type_send)  # [5, 1, 4, 1, 3, 5, 9, 6, 1, 1]
-        print(len_attrib[0])
-
-        # for z in len_attrib:
-        #     self.attrib_data = StringVar()
-        #     self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
-        #     self.attrib_data_entry.place(relx=x, rely=y, height=25, width=30)
-        #     labels_gc_2.append(self.attrib_data_entry)
-        #     z += 1
-        #     x += stepX
-
-
-
-        # while z != len_fldrs:
-        #     len_attrib = len_of_attribute(type=type_send)  # [5, 1, 4, 1, 3, 5, 9, 6, 1, 1]
-        #     for z in len_attrib:
-        #         self.attrib_data = StringVar()
-        #         self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
-        #         self.attrib_data_entry.place(relx=x, rely=y, height=25, width=30)
-        #         labels_gc_2.append(self.attrib_data_entry)
-        #         z += 1
-        #         x += stepX
-        #         # y += stepY
-        #     z += 1
-        #     x += stepX
-        #     y += stepY
-
+    def save_attributes(self):
+        print('go')
 
 if __name__ == "__main__":
     root = Tk()
     my_gui = AddMode(root)
+
+    # for future function
+    main_menu = Menu()
+    file_menu = Menu()
+    file_menu.add_command(label="View")
+    file_menu.add_command(label="Add")
+    file_menu.add_separator()
+    file_menu.add_command(label="Exit")
+    main_menu.add_cascade(label="Mode", menu=file_menu)
+    main_menu.add_cascade(label="About")
+    root.config(menu=main_menu)
+
     root.mainloop()
