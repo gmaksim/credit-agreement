@@ -4,6 +4,8 @@ from tkinter import messagebox
 import sqlite3
 import os
 
+# try to move project on pyqt5(+layouts) or use grid, pack
+# and fix 'import *' - bad var.
 
 output = Tk()
 output.title("View mode")

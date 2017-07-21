@@ -80,16 +80,7 @@ class AddMode:
         self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
                               self.OfficialCorr + self.Questionnaire + self.RussianPassp)
 
-        # delete it after test
-        self.attr = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance', 'Profile Date',
-                           'meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary', 'Date',
-                           'date of issue', 'director', 'members of society', 'list Date', 'Member №1',
-                           'member share №1', 'Member №2', 'member share №2', 'The lender / guarantor',
-                           'Borrower / Principal', 'beneficiary', 'contract number', 'Date of contract',
-                           'The amount of the transaction', 'Contract fee Period', 'Signatory of the Creditor',
-                           'Signatory of the Borrower', 'Sender', 'Destination', 'Outgoing №', 'Date Outgoing №',
-                           'Incoming №', 'Date Incoming №', 'Profile Date', 'Number')
-
+        self.agr_exist = 0
         self.get_current_date(self)
         self.make_db()
 
@@ -116,6 +107,24 @@ class AddMode:
                 'MainContract text NULL, OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
             conn.close()
 
+    def get_sendId(self, table_name):
+        table_name = 'SELECT idSend FROM ' + table_name  # ma bad, son drop table (TO-DO) fix it
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
+        cursor.execute(table_name)
+        number_id_res = cursor.fetchone()
+
+        if number_id_res is None:
+            idSend = 1
+        else:
+            cursor.execute(table_name)
+            numbers_id_res = cursor.fetchall()
+            max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
+            idSend = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
+
+        conn.close()
+        return idSend
+
     def save_start_info(self):
         credit_line_name_imp = str(self.creditLine_name.get())
         credit_line_agreement_imp = str(self.creditLine_agreement.get())
@@ -130,29 +139,18 @@ class AddMode:
         elif len1 <= 0 or len2 <= 0:
             messagebox.showinfo('Information', 'Please type name or # of agreement')
         else:
+            last_number_id_res = self.get_sendId(table_name='ANAME')
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            cursor.execute('SELECT idSend FROM ANAME')
-            number_id_res = cursor.fetchone()
-
-            if number_id_res is None:
-                cursor.execute('INSERT INTO ANAME (Name, Date, Type, idSend) VALUES (?, ?, ?, ?)',
-                               (credit_line_name_imp, credit_line_date_imp, self.credit_line_name_type, 1))
-                cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
-                               (credit_line_agreement_imp, credit_line_agrdate_imp, 1))
-            else:
-                cursor.execute('SELECT idSend FROM ANAME')
-                numbers_id_res = cursor.fetchall()
-                max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
-                last_number_id_res = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
-                cursor.execute('INSERT INTO ANAME (Name, Date, Type, idSend) VALUES (?, ?, ?, ?)',
-                               (credit_line_name_imp, credit_line_date_imp, self.credit_line_name_type, last_number_id_res))
-                cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
-                               (credit_line_agreement_imp, credit_line_agrdate_imp, last_number_id_res))
+            cursor.execute('INSERT INTO ANAME (Name, Date, Type, idSend) VALUES (?, ?, ?, ?)',
+                           (credit_line_name_imp, credit_line_date_imp, self.credit_line_name_type, last_number_id_res))
+            cursor.execute('INSERT INTO AAGRE (Agreement, AgrDate, idSend) VALUES (?, ?, ?)',
+                           (credit_line_agreement_imp, credit_line_agrdate_imp, last_number_id_res))
             conn.commit()
             conn.close()
             self.create_new_window(credit_line_name_imp, credit_line_agreement_imp, self.credit_line_name_type)
 
+    # don't forget about (!) os.chdir('..') х2
     def make_clients_folders(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         b = os.path.exists('CLIENTS')
         if b is False:
@@ -175,14 +173,21 @@ class AddMode:
                 os.mkdir(folder)
                 z += 1
         else:
-            print('realization for additional agreement (later)')
+            self.agr_exist = 1
+            messagebox.showinfo('Information', 'In DB already store this agreement')
+        os.chdir('..')  # !!!!!!!! (in test)
+        os.chdir('..')  # !!!!!!!! (in test)
 
+    # come after test, focus on analyze_folders and (!) os.chdir('..') х2
     def create_new_window(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         root.withdraw()
         self.add_file_level = Toplevel()
         self.add_file_level.title("Add new information. Part 2")
         self.add_file_level.geometry("600x700+100+100")
         self.make_clients_folders(credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type)
+
+        if self.agr_exist == 1:
+            print('later need to move in main windows')  # (TO-DO)
 
         label_start = Label(self.add_file_level, text="Now you need to put files in folders")
         label_start.place(relx=.01, rely=.01, height=60, width=250)
@@ -210,6 +215,7 @@ class AddMode:
             z += 1
             y += stepY
 
+    # don't forget about (!) os.chdir('..') х2
     def analyze_folders(self):  # (TO-DO) make it right (this func too long and hard to understanding)
         # check add file or no (in folder) and make []
         file_exists = []
@@ -229,6 +235,8 @@ class AddMode:
                 file_exists.append('#00ff7d')  # yes
             os.chdir(work_dir)
             z += 1
+        os.chdir('..')  # !!!!!!!! (in test)
+        os.chdir('..')  # !!!!!!!! (in test)
 
         # make colour of labels (y/n file in folder) by info in []
         def count():  # "static" count
@@ -286,53 +294,103 @@ class AddMode:
 
     def arrange_attribute(self, sum_attr, stepX, stepY, place):
 
+        self.len_attrib = []
         def attribute_all_len(type):  # (TO-DO) do it shorter
-            len_attrib = []
             if type == 'org':
-                len_attrib.append(len(self.Adjudications))  # Aou
-                len_attrib.append(len(self.Application))  # Aou
-                len_attrib.append(len(self.ApprovalTran))  # o
-                len_attrib.append(len(self.ExtractUSRLE))  # o
-                len_attrib.append(len(self.ListParShare))  # o
-                len_attrib.append(len(self.MainContract))  # Aou
-                len_attrib.append(len(self.OfficialCorr))  # Aou
-                len_attrib.append(len(self.Questionnaire))  # Aou
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.Application))  # Aou
+                self.len_attrib.append(len(self.ApprovalTran))  # o
+                self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                self.len_attrib.append(len(self.ListParShare))  # o
+                self.len_attrib.append(len(self.MainContract))  # Aou
+                self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
             else:
-                len_attrib.append(len(self.Adjudications))  # Aou
-                len_attrib.append(len(self.Application))  # Aou
-                len_attrib.append(len(self.ConsentSpou))  # U
-                len_attrib.append(len(self.MainContract))  # Aou
-                len_attrib.append(len(self.OfficialCorr))  # Aou
-                len_attrib.append(len(self.Questionnaire))  # Aou
-                len_attrib.append(len(self.RussianPassp))  # U
-            return len_attrib
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.Application))  # Aou
+                self.len_attrib.append(len(self.ConsentSpou))  # U
+                self.len_attrib.append(len(self.MainContract))  # Aou
+                self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
+                self.len_attrib.append(len(self.RussianPassp))  # U
+            return self.len_attrib
 
         # receive correct list with len all attribute
         type_send = 'none'
         if self.credit_line_name_type == 'Organization':
             type_send = 'org'
-        attribute_len_list = attribute_all_len(type=type_send)
+        self.attribute_len_list = attribute_all_len(type=type_send)
 
         # arrange attribute in GUI and insert what's need type in entry
         u = 0
         y = .15
         labels_gc_2 = []
-        for i in attribute_len_list:
+        self.list_attr_to_save = []
+        for i in self.attribute_len_list:
             z = 0
             x = .01
             while z != i:
                 self.attrib_data = StringVar()
                 self.attrib_data_entry = Entry(place, textvariable=self.attrib_data)
                 self.attrib_data_entry.place(relx=x, rely=y, height=25, width=80)
+                self.attrib_data_entry.insert(END, sum_attr[u])
                 labels_gc_2.append(self.attrib_data_entry)
+                self.list_attr_to_save.append(self.attrib_data_entry)
                 z += 1
                 x += stepX
-                self.attrib_data_entry.insert(END, sum_attr[u])
                 u += 1
             y += stepY
 
     def save_attributes(self):
-        print('go')
+        # receive data from user input
+        self.list_attr_list = []
+        for attr in self.list_attr_to_save:
+            to_append = (attr.get())
+            self.list_attr_list.append(to_append)
+
+        # IN TEST
+
+        self.sum_org_attr = (self.Adjudications, self.Application, self.ApprovalTran + self.ExtractUSRLE +
+                             self.ListParShare + self.MainContract + self.OfficialCorr + self.Questionnaire)
+
+        self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
+                              self.OfficialCorr + self.Questionnaire + self.RussianPassp)
+
+
+
+        attrs_org_save = {}
+
+        count_sum_attrs = 0  # !!
+        offset = 0
+        len_all_len_attrs = int(len(self.len_attrib)) - 1
+        while offset != len_all_len_attrs:  # 8
+            count = 0
+            pos = self.len_attrib[offset]
+
+            curr_attr = []
+            while count != pos:
+                curr_attr.append(self.list_attr_list[count])
+                attrs_org_save[pos] = curr_attr
+                count += 1
+            count_sum_attrs += pos  # !!
+            offset += 1
+        print(attrs_org_save)
+
+
+        # insert info in DB
+        # os.chdir('..')  # after another func we in 'CLIENTS' and DB can't connect
+        # last_number_id_res = self.get_sendId(table_name='BDOCAGRE')
+        # conn = sqlite3.connect('DATA//firstBase.sqlite')
+        # cursor = conn.cursor()
+        #
+        # for key in attrs_org_save:
+        #     print(key, '-', attrs_org_save[key])
+        # cursor.execute('INSERT INTO BDOCAGRE (idSend) VALUES (?)', (last_number_id_res,))
+        #
+        # conn.commit()
+        # conn.close()
+
+        # IN TEST
 
 if __name__ == "__main__":
     root = Tk()
