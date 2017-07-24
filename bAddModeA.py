@@ -1,9 +1,31 @@
 #! mode for add info
-from tkinter import *
+from tkinter import *  # (TO-DO) import what's needed
 from tkinter import messagebox
 from datetime import date
 import os
 import sqlite3
+import sys
+
+
+# in test
+class ArrangeWidget:
+    def __init__(self):
+        print('test')
+
+    def arrange_name_labels(self, place_tk, list_with_names, step_down):  # step_down = 0.10 (example)
+        start = 0
+        stop = len(list_with_names)  # (TO-DO) check arrange_attribute, possible make func without fldrs?
+        labels_gc = []
+        while start != stop:
+            label_name = Label(place_tk, text=list_with_names[start], fg="#eee", bg="#333")
+            label_name.place(relx=step_down, rely=.10, height=25, width=150)
+            labels_gc.append(label_name)
+            start += 1
+
+    def arrange_color_labels(self):
+        label_color = Label(place, text='', fg="#eee", bg="#cccccc")
+        label_color.place(relx=stepX, rely=left, height=25, width=40)
+# in test
 
 
 class AddMode:
@@ -81,13 +103,17 @@ class AddMode:
                               self.OfficialCorr + self.Questionnaire + self.RussianPassp)
 
         self.agr_exist = 0
-        self.get_current_date(self)
+        self.insert_current_date(self)
         self.make_db()
 
-    def get_current_date(self, nothing):
+    def insert_current_date(self, nothing):
         today = date.today()
-        self.creditLine_entry_date.insert(END, today)
-        self.creditLine_entry_agr_date.insert(END, today)
+        try:
+            self.creditLine_entry_date.insert(END, today)
+            self.creditLine_entry_agr_date.insert(END, today)
+            self.gp_entry_date.insert(END, today)
+        except AttributeError:
+            print('(TO-DO) change to get (not insert)')
 
     @staticmethod
     def make_db():
@@ -150,7 +176,6 @@ class AddMode:
             conn.close()
             self.create_new_window(credit_line_name_imp, credit_line_agreement_imp, self.credit_line_name_type)
 
-    # don't forget about (!) os.chdir('..') х2
     def make_clients_folders(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         b = os.path.exists('CLIENTS')
         if b is False:
@@ -175,10 +200,7 @@ class AddMode:
         else:
             self.agr_exist = 1
             messagebox.showinfo('Information', 'In DB already store this agreement')
-        os.chdir('..')  # !!!!!!!! (in test)
-        os.chdir('..')  # !!!!!!!! (in test)
 
-    # come after test, focus on analyze_folders and (!) os.chdir('..') х2
     def create_new_window(self, credit_line_name_imp, credit_line_agreement_imp, credit_line_name_type):
         root.withdraw()
         self.add_file_level = Toplevel()
@@ -197,7 +219,8 @@ class AddMode:
         else:
             self.arrange_labels(self.folders_entr, stepX=.28, stepY=.05, place=self.add_file_level)
 
-        analyze_folders_btn = Button(self.add_file_level, text='Check files', height=1, width=20, command=self.add_attribute)  # (IN TEST) CHANGE TO analyze_folders
+        analyze_folders_btn = Button(self.add_file_level, text='Check files', height=1, width=20,
+                                     command=self.analyze_folders)
         analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
 
     def arrange_labels(self, fldrs, stepX, stepY, place):
@@ -215,7 +238,6 @@ class AddMode:
             z += 1
             y += stepY
 
-    # don't forget about (!) os.chdir('..') х2
     def analyze_folders(self):  # (TO-DO) make it right (this func too long and hard to understanding)
         # check add file or no (in folder) and make []
         file_exists = []
@@ -235,8 +257,6 @@ class AddMode:
                 file_exists.append('#00ff7d')  # yes
             os.chdir(work_dir)
             z += 1
-        os.chdir('..')  # !!!!!!!! (in test)
-        os.chdir('..')  # !!!!!!!! (in test)
 
         # make colour of labels (y/n file in folder) by info in []
         def count():  # "static" count
@@ -253,7 +273,7 @@ class AddMode:
         s = 0
         y = .10
         while s != len_dirs:
-            q1 = Label(text='', fg="#eee", bg=make_color())
+            q1 = Label(self.add_file_level, text='', fg="#eee", bg=make_color())
             q1.place(relx=.28, rely=y, height=25, width=40)
             s += 1
             y += .05
@@ -343,58 +363,93 @@ class AddMode:
 
     def save_attributes(self):
         # receive data from user input
-        self.list_attr_list = []
+        list_attr_list = []
         for attr in self.list_attr_to_save:
             to_append = (attr.get())
-            self.list_attr_list.append(to_append)
+            list_attr_list.append(to_append)
 
-        # IN TEST
-
-        self.sum_org_attr = (self.Adjudications, self.Application, self.ApprovalTran + self.ExtractUSRLE +
-                             self.ListParShare + self.MainContract + self.OfficialCorr + self.Questionnaire)
-
-        self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
-                              self.OfficialCorr + self.Questionnaire + self.RussianPassp)
-
-
-
-        attrs_org_save = {}
-
-        count_sum_attrs = 0  # !!
-        offset = 0
-        len_all_len_attrs = int(len(self.len_attrib)) - 1
-        while offset != len_all_len_attrs:  # 8
-            count = 0
-            pos = self.len_attrib[offset]
-
-            curr_attr = []
-            while count != pos:
-                curr_attr.append(self.list_attr_list[count])
-                attrs_org_save[pos] = curr_attr
-                count += 1
-            count_sum_attrs += pos  # !!
-            offset += 1
-        print(attrs_org_save)
-
+        # prepare to insert data (separate by column)
+        separate_list_attr = []
+        start = 0
+        stop = 0
+        for item in self.len_attrib:
+            stop += item
+            separate_list_attr.append(list_attr_list[start:stop])
+            start += item
 
         # insert info in DB
-        # os.chdir('..')  # after another func we in 'CLIENTS' and DB can't connect
-        # last_number_id_res = self.get_sendId(table_name='BDOCAGRE')
-        # conn = sqlite3.connect('DATA//firstBase.sqlite')
-        # cursor = conn.cursor()
-        #
-        # for key in attrs_org_save:
-        #     print(key, '-', attrs_org_save[key])
-        # cursor.execute('INSERT INTO BDOCAGRE (idSend) VALUES (?)', (last_number_id_res,))
-        #
-        # conn.commit()
-        # conn.close()
+        os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # change to main folder for connect in DB
+        last_number_id_res = self.get_sendId(table_name='BDOCAGRE')
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
+        if self.credit_line_name_type == 'Organization':  # (TO-DO) later try 2 change on executemany
+            a = str(separate_list_attr[0])
+            b = str(separate_list_attr[1])
+            c = str(separate_list_attr[2])
+            d = str(separate_list_attr[3])
+            e = str(separate_list_attr[4])
+            f = str(separate_list_attr[5])
+            g = str(separate_list_attr[6])
+            h = str(separate_list_attr[7])
+            cursor.execute('INSERT INTO BDOCAGRE (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                           'MainContract, OfficialCorr, Questionnaire, idSend) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                           (a, b, c, d, e, f, g, h, last_number_id_res))
+        else:
+            a = str(separate_list_attr[0])
+            b = str(separate_list_attr[1])
+            c = str(separate_list_attr[2])
+            d = str(separate_list_attr[3])
+            e = str(separate_list_attr[4])
+            f = str(separate_list_attr[5])
+            g = str(separate_list_attr[6])
+            cursor.execute('INSERT INTO BDOCAGRE (Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, '
+                           'Questionnaire, RussianPassp, idSend) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                           (a, b, c, d, e, f, g, last_number_id_res))
+        conn.commit()
+        conn.close()
+        self.add_guar_pled()
 
-        # IN TEST
+    def add_guar_pled(self):
+        self.attribute_level.withdraw()
+        self.guar_pled_level = Toplevel()
+        self.guar_pled_level.title("Add new information. Part 4")
+        self.guar_pled_level.geometry("820x700+100+100")
+
+        labelStart = Label(self.guar_pled_level, text="Add name and type (Guarantor / Pledgor)")
+        labelStart.place(relx=.01, rely=.01, height=60, width=250)
+
+        name_gp = StringVar()
+        name_gp_entry = Entry(self.guar_pled_level, textvariable=name_gp)
+        name_gp_entry.place(relx=.12, rely=.1, height=25, width=130)
+
+        gp_type = StringVar()
+        gp_type.set('Guarantor')
+        gp_type_type_rb = Radiobutton(self.guar_pled_level, value='Organization', variable=gp_type, text='Guarantor')
+        gp_type_type_rb.place(relx=.12, rely=.15, height=25, width=130)
+        gp_type_type_rb_2 = Radiobutton(self.guar_pled_level, value='Entrepreneur', variable=gp_type, text='Pledgor')
+        gp_type_type_rb_2.place(relx=.12, rely=.20, height=25, width=130)
+
+        self.gp_date = StringVar()
+        self.gp_entry_date = Entry(self.guar_pled_level, textvariable=self.gp_date)
+        self.gp_entry_date.place(relx=.12, rely=.25, height=25, width=130)
+        self.insert_current_date(self)
+
+        labelName = Label(self.guar_pled_level, text="Name", fg="#eee", bg="#333")
+        labelName.place(relx=.01, rely=.10, height=25, width=60)
+        labelType = Label(self.guar_pled_level, text="Type", fg="#eee", bg="#333")
+        labelType.place(relx=.01, rely=.15, height=25, width=60)
+        labelDate = Label(self.guar_pled_level, text="Date", fg="#eee", bg="#333")
+        labelDate.place(relx=.01, rely=.25, height=25, width=60)
+
+        gp_btn = Button(self.guar_pled_level, text='Save and next step', height=1, width=20, command=self.save_gp_info)
+        gp_btn.place(relx=.12, rely=.40, height=30, width=130)
+
+    def save_gp_info(self):
+        print('d')
 
 if __name__ == "__main__":
     root = Tk()
-    my_gui = AddMode(root)
+    AddMode(root)
 
     # for future function
     main_menu = Menu()

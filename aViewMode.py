@@ -6,6 +6,7 @@ import os
 
 # try to move project on pyqt5(+layouts) or use grid, pack
 # and fix 'import *' - bad var.
+# try row_factory (sqlite3row) and fetchone (in for)
 
 output = Tk()
 output.title("View mode")
