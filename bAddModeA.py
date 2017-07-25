@@ -7,27 +7,6 @@ import sqlite3
 import sys
 
 
-# in test
-class ArrangeWidget:
-    def __init__(self):
-        print('test')
-
-    def arrange_name_labels(self, place_tk, list_with_names, step_down):  # step_down = 0.10 (example)
-        start = 0
-        stop = len(list_with_names)  # (TO-DO) check arrange_attribute, possible make func without fldrs?
-        labels_gc = []
-        while start != stop:
-            label_name = Label(place_tk, text=list_with_names[start], fg="#eee", bg="#333")
-            label_name.place(relx=step_down, rely=.10, height=25, width=150)
-            labels_gc.append(label_name)
-            start += 1
-
-    def arrange_color_labels(self):
-        label_color = Label(place, text='', fg="#eee", bg="#cccccc")
-        label_color.place(relx=stepX, rely=left, height=25, width=40)
-# in test
-
-
 class AddMode:
     def __init__(self, master):
         self.master = master
@@ -223,6 +202,7 @@ class AddMode:
                                      command=self.analyze_folders)
         analyze_folders_btn.place(relx=.08, rely=.50, height=30, width=130)
 
+    # transferred
     def arrange_labels(self, fldrs, stepX, stepY, place):
         z = 0
         y = .10
