@@ -9,51 +9,53 @@ import sys
 
 class AddMode:
     def __init__(self, master):
-        self.master = master
-        root.title("Add new information. Part 1")
-        root.geometry("600x700+100+100")
-
-        self.labelStart = Label(text="Add name of organization and # of agreement")
-        self.labelStart.place(relx=.01, rely=.01, height=60, width=250)
-
-        self.creditLine_name = StringVar()
-        self.creditLine_entry_name = Entry(textvariable=self.creditLine_name)
-        self.creditLine_entry_name.place(relx=.12, rely=.1, height=25, width=130)
-
-        self.creditLine_type = StringVar()
-        self.creditLine_type.set('Organization')
-        self.creditLine_rb_type = Radiobutton(value='Organization', variable=self.creditLine_type,
-                                              text='Organization')
-        self.creditLine_rb_type.place(relx=.12, rely=.15, height=25, width=130)
-        self.creditLine_rb_type_2 = Radiobutton(value='Entrepreneur', variable=self.creditLine_type,
-                                                text='Entrepreneur')
-        self.creditLine_rb_type_2.place(relx=.12, rely=.20, height=25, width=130)
-
-        self.creditLine_date = StringVar()
-        self.creditLine_entry_date = Entry(textvariable=self.creditLine_date)
-        self.creditLine_entry_date.place(relx=.12, rely=.25, height=25, width=130)
-
-        self.creditLine_agreement = StringVar()
-        self.creditLine_entry_agreement = Entry(textvariable=self.creditLine_agreement)
-        self.creditLine_entry_agreement.place(relx=.12, rely=.30, height=25, width=130)
-
-        self.creditLine_agr_date = StringVar()
-        self.creditLine_entry_agr_date = Entry(textvariable=self.creditLine_agr_date)
-        self.creditLine_entry_agr_date.place(relx=.12, rely=.35, height=25, width=130)
-
-        self.labelName = Label(text="Name", fg="#eee", bg="#333")
-        self.labelName.place(relx=.01, rely=.10, height=25, width=60)
-        self.labelType = Label(text="Type", fg="#eee", bg="#333")
-        self.labelType.place(relx=.01, rely=.15, height=25, width=60)
-        self.labelDate = Label(text="Date", fg="#eee", bg="#333")
-        self.labelDate.place(relx=.01, rely=.25, height=25, width=60)
-        self.labelAgreement = Label(text="Agreement", fg="#eee", bg="#333")
-        self.labelAgreement.place(relx=.01, rely=.30, height=25, width=60)
-        self.labelAgrDate = Label(text="Agr. date", fg="#eee", bg="#333")
-        self.labelAgrDate.place(relx=.01, rely=.35, height=25, width=60)
-
-        self.creditLine_btn = Button(text='Save and next step', height=1, width=20, command=self.save_start_info)
-        self.creditLine_btn.place(relx=.12, rely=.40, height=30, width=130)
+        #done
+        # self.master = master
+        # root.title("Add new information. Part 1")
+        # root.geometry("600x700+100+100")
+        #
+        # self.labelStart = Label(text="Add name of organization and # of agreement")
+        # self.labelStart.place(relx=.01, rely=.01, height=60, width=250)
+        #
+        # self.creditLine_name = StringVar()
+        # self.creditLine_entry_name = Entry(textvariable=self.creditLine_name)
+        # self.creditLine_entry_name.place(relx=.12, rely=.1, height=25, width=130)
+        #
+        # self.creditLine_type = StringVar()
+        # self.creditLine_type.set('Organization')
+        # self.creditLine_rb_type = Radiobutton(value='Organization', variable=self.creditLine_type,
+        #                                       text='Organization')
+        # self.creditLine_rb_type.place(relx=.12, rely=.15, height=25, width=130)
+        # self.creditLine_rb_type_2 = Radiobutton(value='Entrepreneur', variable=self.creditLine_type,
+        #                                         text='Entrepreneur')
+        # self.creditLine_rb_type_2.place(relx=.12, rely=.20, height=25, width=130)
+        #
+        # self.creditLine_date = StringVar()
+        # self.creditLine_entry_date = Entry(textvariable=self.creditLine_date)
+        # self.creditLine_entry_date.place(relx=.12, rely=.25, height=25, width=130)
+        #
+        # self.creditLine_agreement = StringVar()
+        # self.creditLine_entry_agreement = Entry(textvariable=self.creditLine_agreement)
+        # self.creditLine_entry_agreement.place(relx=.12, rely=.30, height=25, width=130)
+        #
+        # self.creditLine_agr_date = StringVar()
+        # self.creditLine_entry_agr_date = Entry(textvariable=self.creditLine_agr_date)
+        # self.creditLine_entry_agr_date.place(relx=.12, rely=.35, height=25, width=130)
+        #
+        # self.labelName = Label(text="Name", fg="#eee", bg="#333")
+        # self.labelName.place(relx=.01, rely=.10, height=25, width=60)
+        # self.labelType = Label(text="Type", fg="#eee", bg="#333")
+        # self.labelType.place(relx=.01, rely=.15, height=25, width=60)
+        # self.labelDate = Label(text="Date", fg="#eee", bg="#333")
+        # self.labelDate.place(relx=.01, rely=.25, height=25, width=60)
+        # self.labelAgreement = Label(text="Agreement", fg="#eee", bg="#333")
+        # self.labelAgreement.place(relx=.01, rely=.30, height=25, width=60)
+        # self.labelAgrDate = Label(text="Agr. date", fg="#eee", bg="#333")
+        # self.labelAgrDate.place(relx=.01, rely=.35, height=25, width=60)
+        #
+        # self.creditLine_btn = Button(text='Save and next step', height=1, width=20, command=self.save_start_info)
+        # self.creditLine_btn.place(relx=.12, rely=.40, height=30, width=130)
+        #DONE#
 
         # folders for type of name # (TO-DO) push it to DB and create execute-select
         self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
@@ -93,42 +95,45 @@ class AddMode:
             self.gp_entry_date.insert(END, today)
         except AttributeError:
             print('(TO-DO) change to get (not insert)')
+    #DONE#
+    # @staticmethod
+    # def make_db():
+    #     b = os.path.exists('DATA')
+    #     if b is False:
+    #         os.mkdir('DATA')
+    #         messagebox.showinfo('Information', 'DATA folder and DB file created')
+    #         conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #         cursor = conn.cursor()
+    #         cursor.execute(  # (TO-DO) make it right (executescript)
+    #             'CREATE TABLE ANAME (id integer PRIMARY KEY, Name text NULL, Date text NULL, Type text NULL, idSend integer NULL)')
+    #         cursor.execute(
+    #             'CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
+    #         cursor.execute(
+    #             'CREATE TABLE BDOCAGRE (id integer PRIMARY KEY, Adjudications text NULL, Application text NULL, '
+    #             'ApprovalTran text NULL, ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, '
+    #             'MainContract text NULL, OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
+    #         conn.close()
+    #DONE#
 
-    @staticmethod
-    def make_db():
-        b = os.path.exists('DATA')
-        if b is False:
-            os.mkdir('DATA')
-            messagebox.showinfo('Information', 'DATA folder and DB file created')
-            conn = sqlite3.connect('DATA//firstBase.sqlite')
-            cursor = conn.cursor()
-            cursor.execute(  # (TO-DO) make it right (executescript)
-                'CREATE TABLE ANAME (id integer PRIMARY KEY, Name text NULL, Date text NULL, Type text NULL, idSend integer NULL)')
-            cursor.execute(
-                'CREATE TABLE AAGRE (id integer PRIMARY KEY, Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
-            cursor.execute(
-                'CREATE TABLE BDOCAGRE (id integer PRIMARY KEY, Adjudications text NULL, Application text NULL, '
-                'ApprovalTran text NULL, ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, '
-                'MainContract text NULL, OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, idSend integer NULL)')
-            conn.close()
-
-    def get_sendId(self, table_name):
-        table_name = 'SELECT idSend FROM ' + table_name  # ma bad, son drop table (TO-DO) fix it
-        conn = sqlite3.connect('DATA//firstBase.sqlite')
-        cursor = conn.cursor()
-        cursor.execute(table_name)
-        number_id_res = cursor.fetchone()
-
-        if number_id_res is None:
-            idSend = 1
-        else:
-            cursor.execute(table_name)
-            numbers_id_res = cursor.fetchall()
-            max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
-            idSend = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
-
-        conn.close()
-        return idSend
+    #DONE#
+    # def get_sendId(self, table_name):
+    #     table_name = 'SELECT idSend FROM ' + table_name  # ma bad, son drop table (TO-DO) fix it
+    #     conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #     cursor = conn.cursor()
+    #     cursor.execute(table_name)
+    #     number_id_res = cursor.fetchone()
+    #
+    #     if number_id_res is None:
+    #         idSend = 1
+    #     else:
+    #         cursor.execute(table_name)
+    #         numbers_id_res = cursor.fetchall()
+    #         max_numbers = str(max(numbers_id_res))  # take max number of idSend, convert to str type to possible cut
+    #         idSend = int(max_numbers[1:-2]) + 1  # cut '(,)' around number, convert to int and plus one
+    #
+    #     conn.close()
+    #     return idSend
+    #DONE#
 
     def save_start_info(self):
         credit_line_name_imp = str(self.creditLine_name.get())
