@@ -8,7 +8,6 @@ import sys
 class AddingMode(QWidget):
     def __init__(self):
         super().__init__()
-
         self.create_db_and_tables()
         self.last_number_id_res = self.get_sendid_from_db(table_name='NameAgreement')
         self.agree_global = 'none_dirs'  # to know with which agreement we work
@@ -29,7 +28,7 @@ class AddingMode(QWidget):
         self.folders_gp_entr = ('Adjudications', 'Consent to the encumbrance', 'Official correspondence',
                                 'Questionnaire', 'Russian passport', 'Surety agreement OR pledge')
 
-        # GrpObj block
+        # Optional block
         self.folder_grp_obj = ('Certificate of ownership', 'Contract of sale', 'Extract USRRE')
 
         # Start block
@@ -50,7 +49,7 @@ class AddingMode(QWidget):
         self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
                               self.OfficialCorr + self.Questionnaire + self.RussianPassp)
         self.len_attrib = []
-        self.data_from_attrib = []
+
 
         # GuPl block
         self.ConsEncumb = ('Date of approval', 'Address of the object', 'Cadastral (or conditional) number',
@@ -62,7 +61,13 @@ class AddingMode(QWidget):
                                 + self.OfficialCorr + self.Questionnaire + self.SuretAgrPledg)
         self.sum_gp_entr_attr = (self.Adjudications + self.ConsentSpou + self.OfficialCorr + self.Questionnaire
                                  + self.RussianPassp + self.SuretAgrPledg)
-        self.arr_attr_start_or_pg = '0'
+
+        # Optional block
+        self.CertifOwner = ('evidence Date', 'Address of the object', 'Cadastral (or conditional) number')
+        self.ContrSale = ('Seller', 'Buyer', 'agreement date', 'Address of the object',
+                           'Cadastral (or conditional) number')
+        self.ExtracUSRRE = ('date of issue', 'Address of the object', 'Cadastral (or conditional) number')
+        self.sum_grp_obj_ttr = (self.CertifOwner + self.ContrSale + self.ExtracUSRRE)
 
         self.pt1_start_adding()
 
@@ -110,59 +115,12 @@ class AddingMode(QWidget):
             start += 1
             step += 2
 
-    def arrange_attributes(self, place, step_down, list_with_words):
-        def receive_list_with_len_attributes():  # (TO-DO) make flexible func
-            self.len_attrib = []
-            if self.type_is == 'Organization':
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-                self.len_attrib.append(len(self.Application))  # Aou
-                self.len_attrib.append(len(self.ApprovalTran))  # o
-                self.len_attrib.append(len(self.ExtractUSRLE))  # o
-                self.len_attrib.append(len(self.ListParShare))  # o
-                self.len_attrib.append(len(self.MainContract))  # Aou
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-            else:
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-                self.len_attrib.append(len(self.Application))  # Aou
-                self.len_attrib.append(len(self.ConsentSpou))  # U
-                self.len_attrib.append(len(self.MainContract))  # Aou
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.RussianPassp))  # U
-            return self.len_attrib
-
-        def receive_list_with_len_attributes_pg():
-            self.len_attrib = []
-            if self.type_is == 'Organization':
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-                self.len_attrib.append(len(self.ApprovalTran))  # o
-                self.len_attrib.append(len(self.ConsentSpou))  # o
-                self.len_attrib.append(len(self.ExtractUSRLE))  # o
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
-            else:
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-                self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                self.len_attrib.append(len(self.OfficialCorr))  # U
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.RussianPassp))  # Aou
-                self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
-            return self.len_attrib
-
-        self.attribute_len_list = receive_list_with_len_attributes()
-
-        if self.arr_attr_start_or_pg == 1:
-            self.attribute_len_list = receive_list_with_len_attributes_pg()
-
-
-        print(self.arr_attr_start_or_pg)
-        print(self.attribute_len_list)
+    def arrange_attributes(self, place, step_down, list_with_words, attribute_len):
+        self.data_from_attrib = []
 
         word = 0
         step = 2
-        for i in self.attribute_len_list:  # i = quantity of needed labels
+        for i in attribute_len:  # i = quantity of needed labels
             start = 0
             offset = 0
             while start != i:
@@ -173,6 +131,8 @@ class AddingMode(QWidget):
                 offset += 1
                 word += 1
             step += step_down
+
+        return self.data_from_attrib
 
     def clear_gui(self):
         for i in reversed(range(self.layout.count())):
@@ -200,6 +160,9 @@ class AddingMode(QWidget):
                 'CREATE TABLE DocumGuPl (id integer PRIMARY KEY, Adjudications text NULL, ApprovalTran text NULL, '
                 'ConsentSpou text NULL, ExtractUSRLE text NULL, OfficialCorr text NULL, Questionnaire text NULL, '
                 'RussianPassp text NULL, SuretAgrPledg text NULL, idSend integer NULL)')
+            cursor.execute(
+                'CREATE TABLE GroupObj (id integer PRIMARY KEY, Name text NULL, CertifOwner text NULL, '
+                'ContrSale text NULL, ExtracUSRRE text NULL, idSend integer NULL)')
             conn.close()
 
     def get_sendid_from_db(self, table_name):
@@ -242,9 +205,9 @@ class AddingMode(QWidget):
 
         return self.collected_data
 
-    def collect_data(self):
+    def collect_data(self, data_from):
         self.collected_data_attributes = []
-        for i in self.data_from_attrib:
+        for i in data_from:
             to_append = (i.text())
             self.collected_data_attributes.append(to_append)
         return self.collected_data_attributes
@@ -305,7 +268,6 @@ class AddingMode(QWidget):
 
         return self.checking_files_done
 
-    # TEST
     def pt1_start_adding(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
@@ -329,9 +291,10 @@ class AddingMode(QWidget):
                 QMessageBox.warning(self, 'Warning', 'Please add agreement')
             else:
                 commit_info_to_db()  # (TO-DO) check for folders exists
+        self.pt1_data_saver = []
         def commit_info_to_db():  # run function by button with param.
             data_to_insert = self.collect_data_with_comboboxes()
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # change to main folder for connect DB
+            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
             cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
@@ -340,16 +303,64 @@ class AddingMode(QWidget):
                             data_to_insert[3], data_to_insert[4], self.last_number_id_res))
             conn.commit()
             conn.close()
+            self.pt1_data_saver.append(data_to_insert[0])
+            self.pt1_data_saver.append(data_to_insert[1])
+            self.pt1_data_saver.append(data_to_insert[2])
+            self.transfer_input_to_pt2 = self.collect_data_with_comboboxes()
             self.pt2_put_files()
         self.butt = QPushButton(text='Save and next step')
         self.butt.clicked.connect(check_data)
-        # self.butt.clicked.connect(self.pt5_optional_adding_groups_obj)  # TEST
+        self.layout.addWidget(self.butt, 6, 1)
+
+        self.show()
+
+    def pt1_start_adding_again(self):
+        self.clear_gui()
+
+        self.label_start = QLabel('Add # of agreement')
+        self.layout.addWidget(self.label_start, 0, 1)
+        self.setGeometry(100, 100, 300, 200)
+        self.setWindowTitle('AddingModeAgain (Part 1 of 4)')
+
+        admode_pt1_labels = ['Agreement', 'Agr. date']
+        self.arrange_labels(place=self.layout, list_with_names=admode_pt1_labels, step_down=1)
+
+        self.entry = QLineEdit()
+        self.layout.addWidget(self.entry, 1, 1)
+        self.entry2 = QLineEdit()
+        self.layout.addWidget(self.entry2, 2, 1)
+
+        def check_data():
+            self.data_ins_zero = self.entry.text()
+            self.data_ins_one = self.entry2.text()
+
+            if self.data_ins_zero == '':
+                QMessageBox.warning(self, 'Warning', 'Please add agreement')
+            else:
+                commit_info_to_db()
+        def commit_info_to_db():
+            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+            conn = sqlite3.connect('DATA//firstBase.sqlite')
+            cursor = conn.cursor()
+            cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
+                           'VALUES (?, ?, ?, ?, ?, ?)',
+                           (self.pt1_data_saver[0], self.pt1_data_saver[1], self.pt1_data_saver[2],
+                            self.data_ins_zero, self.data_ins_one, self.last_number_id_res))
+            conn.commit()
+            conn.close()
+            self.transfer_input_to_pt2.insert(3, self.data_ins_zero)
+            self.transfer_input_to_pt2.pop(4)
+            self.transfer_input_to_pt2.insert(4, self.data_ins_one)
+            self.transfer_input_to_pt2.pop(5)
+            self.pt2_put_files()
+        self.butt = QPushButton(text='Save and next step')
+        self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 6, 1)
 
         self.show()
 
     def pt2_put_files(self):
-        data_to_insert = self.collect_data_with_comboboxes()
+        data_to_insert = self.transfer_input_to_pt2
 
         def make_clients_folders():
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
@@ -359,23 +370,21 @@ class AddingMode(QWidget):
                 os.mkdir('CLIENTS')
             os.chdir('CLIENTS')
 
-            b = os.path.exists(data_to_insert[0])
-            if b is False:
-                q = data_to_insert[0] + '//' + data_to_insert[3]
-                self.agree_global = 'CLIENTS//' + q
-                os.makedirs(q)
-                os.chdir(q)
+            q = data_to_insert[0] + '//' + data_to_insert[3]
+            self.agree_global = 'CLIENTS//' + q
+            os.makedirs(q)
+            os.chdir(q)
 
-                if data_to_insert[1] == 'Organization':
-                    folders = self.folders_org
-                else:
-                    folders = self.folders_entr
-                z = 0
-                d = len(folders)
-                while z != d:
-                    folder = folders[z]
-                    os.mkdir(folder)
-                    z += 1
+            if data_to_insert[1] == 'Organization':
+                folders = self.folders_org
+            else:
+                folders = self.folders_entr
+            z = 0
+            d = len(folders)
+            while z != d:
+                folder = folders[z]
+                os.mkdir(folder)
+                z += 1
         make_clients_folders()
 
         self.clear_gui()
@@ -421,22 +430,44 @@ class AddingMode(QWidget):
             self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
             words = self.sum_entr_attr
 
-        self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words)
+        def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+            self.len_attrib = []
+            if self.type_is == 'Organization':
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.Application))  # Aou
+                self.len_attrib.append(len(self.ApprovalTran))  # o
+                self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                self.len_attrib.append(len(self.ListParShare))  # o
+                self.len_attrib.append(len(self.MainContract))  # Aou
+                self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
+            else:
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.Application))  # Aou
+                self.len_attrib.append(len(self.ConsentSpou))  # U
+                self.len_attrib.append(len(self.MainContract))  # Aou
+                self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
+                self.len_attrib.append(len(self.RussianPassp))  # U
+            return self.len_attrib
+        attribute_len_list = receive_list_with_len_attributes()
+        data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
+                                                   attribute_len=attribute_len_list)
 
         def commit_info_pt2_to_db():
-            list_with_attributes = self.collect_data()
+            list_with_attributes = self.collect_data(data_from=data_from_attrib)
 
             # prepare to insert data (separate by column)
             separate_list_with_attributes = []
             start = 0
             stop = 0
-            for item in self.attribute_len_list:
+            for item in attribute_len_list:
                 stop += item
                 separate_list_with_attributes.append(list_with_attributes[start:stop])
                 start += item
 
             # insert info in DB
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # DEBUG
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
             if self.type_is == 'Organization':  # (TO-DO) do it shorter
@@ -495,7 +526,7 @@ class AddingMode(QWidget):
                 commit_info_to_db()  # (TO-DO) check for folders exists
         def commit_info_to_db():
             data_to_insert = self.collect_data_with_comboboxes()
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # change to main folder for connect DB
+            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
             cursor.execute('INSERT INTO PledGuar (Name, Type, Type2, Date, idSend) '
@@ -522,7 +553,8 @@ class AddingMode(QWidget):
             b = os.path.exists(data_to_insert[0])
             if b is False:
                 q = '_' + data_to_insert[0]
-                self.gp_global = 'CLIENTS//' + q
+
+                self.gp_global = self.agree_global + '//' + q
                 os.makedirs(q)
                 os.chdir(q)
 
@@ -543,7 +575,7 @@ class AddingMode(QWidget):
         self.label_start = QLabel('Put files in folders')
         self.layout.addWidget(self.label_start, 0, 1)
         self.setGeometry(100, 100, 500, 500)
-        self.setWindowTitle('AddingMode (Part 2 of 4)')
+        self.setWindowTitle('AddingMode (Part 3 of 4)')
 
         self.len_folder = 0
         if self.type_is == 'Organization':
@@ -564,7 +596,6 @@ class AddingMode(QWidget):
         self.layout.addWidget(self.butt, 17, 1)
 
     def pt4_adding_attributes_for_files_gp(self):
-        print('3')
         self.clear_gui()
 
         self.label_start = QLabel('Add attributes for documents')
@@ -575,31 +606,48 @@ class AddingMode(QWidget):
         if self.type_is == 'Organization':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
             words = self.sum_gp_org_attr
-            self.arr_attr_start_or_pg = 1
         else:
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr, step_down=2)
             words = self.sum_gp_entr_attr
-            self.arr_attr_start_or_pg = 1
 
-        self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words)
+        def receive_list_with_len_attributes_pg():
+            self.len_attrib = []
+            if self.type_is == 'Organization':
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.ApprovalTran))  # o
+                self.len_attrib.append(len(self.ConsentSpou))  # o
+                self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
+                self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
+            else:
+                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                self.len_attrib.append(len(self.OfficialCorr))  # U
+                self.len_attrib.append(len(self.Questionnaire))  # Aou
+                self.len_attrib.append(len(self.RussianPassp))  # Aou
+                self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
+            return self.len_attrib
+        attribute_len_list = receive_list_with_len_attributes_pg()
+        data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words, attribute_len=attribute_len_list)
+
         def commit_info_pt4_to_db():
-            print('1')
-            list_with_attributes = self.collect_data()
-            print('2')
+            list_with_attributes = self.collect_data(data_from=data_from_attrib)
+
             # prepare to insert data (separate by column)
             separate_list_with_attributes = []
             start = 0
             stop = 0
-            for item in self.attribute_len_list:
+            for item in attribute_len_list:
                 stop += item
                 separate_list_with_attributes.append(list_with_attributes[start:stop])
                 start += item
-            print('3')
+
             # insert info in DB
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            print('4')
+
             if self.type_is == 'Organization':  # (TO-DO) do it shorter
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
@@ -623,14 +671,14 @@ class AddingMode(QWidget):
                     'INSERT INTO DocumGuPl (Adjudications, ConsentSpou, OfficialCorr, Questionnaire, RussianPassp, '
                     'SuretAgrPledg, idSend) VALUES (?, ?, ?, ?, ?, ?, ?)',
                     (a, b, c, d, e, f, self.last_number_id_res))
-            print('5')
+
             conn.commit()
             conn.close()
 
             if self.type_g_or_p == 'Pledgor':
                 self.pt5_optional_adding_groups_obj()
             else:
-                print('go home screen')
+                self.loop_in_guaran_pled()
         self.butt = QPushButton(text='Save information')
         self.butt.clicked.connect(commit_info_pt4_to_db)
         self.layout.addWidget(self.butt, 17, 0)
@@ -661,13 +709,6 @@ class AddingMode(QWidget):
         self.show()
 
     def pt5_optional_check_and_commit(self):
-        self.clear_gui()
-
-        self.label_start = QLabel('Put files in folders')
-        self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 500, 500)
-        self.setWindowTitle('AddingMode (Part 4 of 4)')
-
         def make_grp_obj_folders():
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             os.chdir(str(self.gp_global))
@@ -688,23 +729,99 @@ class AddingMode(QWidget):
                     z += 1
         make_grp_obj_folders()
 
+        self.clear_gui()
 
-        print(self.data_to_insert)
+        self.label_start = QLabel('Put files in folders')
+        self.layout.addWidget(self.label_start, 0, 1)
+        self.setGeometry(100, 100, 300, 300)
+        self.setWindowTitle('AddingMode (Part 4 of 4)')
+
+        self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
+        self.len_folder = len(self.folder_grp_obj)
+        self.arrange_color_labels(place=self.layout, total=self.len_folder)
+
+        def add_attribute_or_no():
+            result = self.check_files_in_folder()
+            if result is True:
+                adding_attributes_for_grp_obj()
+        self.butt = QPushButton(text='Check files in folder')
+        self.butt.clicked.connect(add_attribute_or_no)
+        self.layout.addWidget(self.butt, 17, 1)
+
+        def adding_attributes_for_grp_obj():
+            self.clear_gui()
+
+            self.label_start = QLabel('Add attributes for documents')
+            self.layout.addWidget(self.label_start, 0, 0)
+            self.setGeometry(100, 100, 400, 300)
+            self.setWindowTitle('AddingMode (Part 4 of 4)')
+
+            self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
+            words = self.sum_grp_obj_ttr
+
+            def receive_list_with_len_attributes_grp_obj():
+                self.len_attrib = []
+                self.len_attrib.append(len(self.CertifOwner))
+                self.len_attrib.append(len(self.ContrSale))
+                self.len_attrib.append(len(self.ExtracUSRRE))
+                return self.len_attrib
+            self.attribute_len_list = receive_list_with_len_attributes_grp_obj()
+            self.data_from_attrib_grp_obj = self.arrange_attributes(place=self.layout, step_down=2,
+                                                                    list_with_words=words,
+                                                                    attribute_len=self.attribute_len_list)
+
+            self.butt = QPushButton(text='Save information')
+            self.butt.clicked.connect(commit_info_to_db)
+            self.layout.addWidget(self.butt, 17, 0)
+
         def commit_info_to_db():
-            data_to_insert = self.collect_data_with_comboboxes()
+            list_with_attributes = self.collect_data(data_from=self.data_from_attrib_grp_obj)
+
+            # prepare to insert data (separate by column)
+            separate_list_with_attributes = []
+            separate_list_with_attributes.append(self.data_to_insert)
+            start = 0
+            stop = 0
+            for item in self.attribute_len_list:
+                stop += item
+                separate_list_with_attributes.append(list_with_attributes[start:stop])
+                start += item
+
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # change to main folder for connect DB
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO PledGuar (Name, Type, Type2, Date, idSend) '
-                           'VALUES (?, ?, ?, ?, ?)',
-                           (data_to_insert[0], data_to_insert[1], data_to_insert[2], data_to_insert[3],
-                            self.last_number_id_res))
+
+            a = str(separate_list_with_attributes[0])
+            b = str(separate_list_with_attributes[1])
+            c = str(separate_list_with_attributes[2])
+            d = str(separate_list_with_attributes[3])
+            cursor.execute('INSERT INTO GroupObj (Name, CertifOwner, ContrSale, ExtracUSRRE, idSend) '
+                           'VALUES (?, ?, ?, ?, ?)', (a, b, c, d, self.last_number_id_res))
+
             conn.commit()
             conn.close()
-            self.pt4_put_files_gu_pl()
-        # def loop_adding():
-        # ONLY PLEDGOR GO TO NEXT STEP
-        #     QMessageBox.question(self, 'Question', 'Add another ')
+            self.loop_in_group_obj()
+
+    def loop_in_group_obj(self):
+        reply = QMessageBox.question(self, 'Question', 'Add another group object?', QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.pt5_optional_adding_groups_obj()
+        else:
+            self.loop_in_guaran_pled()
+
+    def loop_in_guaran_pled(self):
+        reply = QMessageBox.question(self, 'Question', 'Add another guarantor or pledgor?', QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.pt3_adding_guar_pled()
+        else:
+            self.loop_in_creed_agr()
+
+    def loop_in_creed_agr(self):
+        reply = QMessageBox.question(self, 'Question', 'Add another credit agreement?', QMessageBox.Yes, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.pt1_start_adding_again()
+        else:
+            main()  # (TO-DO) don't work properly
 
 
 class UpdatingMode(QWidget):
@@ -720,7 +837,42 @@ class UpdatingMode(QWidget):
 class ViewMode(QWidget):
     pass
 
+# for catching pyqt c++ errors
+sys._excepthook = sys.excepthook
+def my_exception_hook(exctype, value, traceback):
+    print(exctype, value, traceback)
+    sys._excepthook(exctype, value, traceback)
+    sys.exit(1)
+sys.excepthook = my_exception_hook
+
+
+def main():
+    app = QApplication(sys.argv)
+
+    def start_adding_mode():
+        AddingMode()
+
+    def start_view_mode():
+        ViewMode()
+
+    root = QWidget()
+    root.layout = QGridLayout()
+    root.setLayout(root.layout)
+    root.setGeometry(100, 100, 300, 200)
+    root.setWindowTitle('cre.prog.')
+    root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - in progress\nUPDATE MODE - pending')
+    root.layout.addWidget(root.label_start, 0, 1)
+
+    root.butt = QPushButton(text='start adding')
+    root.butt.clicked.connect(start_adding_mode)
+    root.layout.addWidget(root.butt, 1, 1)
+
+    root.butt = QPushButton(text='start view')
+    root.butt.clicked.connect(start_view_mode)
+    root.layout.addWidget(root.butt, 2, 1)
+
+    root.show()
+    sys.exit(app.exec_())
+
 if __name__ == "__main__":
-    AdMode_pt1 = QApplication(sys.argv)
-    run = AddingMode()
-    sys.exit(AdMode_pt1.exec_())
+    main()
