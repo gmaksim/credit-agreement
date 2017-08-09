@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import \
     (QWidget, QPushButton, QApplication, QLabel, QComboBox, QLineEdit, QGridLayout, QMessageBox, QSizePolicy)
+from PyQt5.QtCore import Qt
 import os
 import sqlite3
 import sys
@@ -15,7 +16,7 @@ class AddingMode(QWidget):
 
         # Start block
         self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
-                            'List of participants or shareholders register', 'Main contract',
+                            'List of part. or sharehold.', 'Main contract',
                             'Official correspondence', 'Questionnaire')
         self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
                              'Official correspondence', 'Questionnaire', 'Russian passport')
@@ -271,8 +272,9 @@ class AddingMode(QWidget):
     def pt1_start_adding(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 1 of 4)')
+        self.layout.setAlignment(Qt.AlignCenter)
 
         self.label_start = QLabel('Add name of organization and # of agreement')
         self.layout.addWidget(self.label_start, 0, 1)
@@ -290,7 +292,7 @@ class AddingMode(QWidget):
             elif data_to_insert[3] == '':
                 QMessageBox.warning(self, 'Warning', 'Please add agreement')
             else:
-                commit_info_to_db()  # (TO-DO) check for folders exists
+                self.loop_in_creed_agr()  # (TO-DO) check for folders exists
         self.pt1_data_saver = []
         def commit_info_to_db():  # run function by button with param.
             data_to_insert = self.collect_data_with_comboboxes()
@@ -319,7 +321,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Add # of agreement')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 300, 200)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingModeAgain (Part 1 of 4)')
 
         admode_pt1_labels = ['Agreement', 'Agr. date']
@@ -391,7 +393,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Put files in folders')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 500, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 2 of 4)')
 
         self.len_folder = 0
@@ -418,9 +420,9 @@ class AddingMode(QWidget):
     def pt2_adding_attributes_for_files(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add attributes for documents')
+        self.label_start = QLabel('Add attributes\nfor documents')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(100, 100, 800, 800)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 2 of 4)')
 
         if self.type_is == 'Organization':
@@ -507,7 +509,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Add pledgor or guarantor')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 200, 200)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 3 of 4)')
 
         admode_pt3_labels = ['Name', 'Type', 'Type 2', 'Date']
@@ -574,7 +576,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Put files in folders')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 500, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 3 of 4)')
 
         self.len_folder = 0
@@ -600,7 +602,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Add attributes for documents')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(100, 100, 800, 800)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 3 of 4)')
 
         if self.type_is == 'Organization':
@@ -688,7 +690,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Add groups of objects')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 200, 200)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 4 of 4)')
 
         self.arrange_labels(place=self.layout, list_with_names=['Name'], step_down=1)
@@ -733,7 +735,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Put files in folders')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 300, 300)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('AddingMode (Part 4 of 4)')
 
         self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
@@ -753,7 +755,7 @@ class AddingMode(QWidget):
 
             self.label_start = QLabel('Add attributes for documents')
             self.layout.addWidget(self.label_start, 0, 0)
-            self.setGeometry(100, 100, 400, 300)
+            self.setGeometry(100, 100, 600, 500)
             self.setWindowTitle('AddingMode (Part 4 of 4)')
 
             self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
@@ -821,7 +823,8 @@ class AddingMode(QWidget):
         if reply == QMessageBox.Yes:
             self.pt1_start_adding_again()
         else:
-            main()  # (TO-DO) don't work properly
+            print('2')
+            main()
 
 
 class UpdatingMode(QWidget):
@@ -850,7 +853,10 @@ def main():
     app = QApplication(sys.argv)
 
     def start_adding_mode():
+
+        # root.destroy()
         AddingMode()
+        sys.exit(app)
 
     def start_view_mode():
         ViewMode()
@@ -858,7 +864,7 @@ def main():
     root = QWidget()
     root.layout = QGridLayout()
     root.setLayout(root.layout)
-    root.setGeometry(100, 100, 300, 200)
+    root.setGeometry(100, 100, 600, 500)
     root.setWindowTitle('cre.prog.')
     root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - in progress\nUPDATE MODE - pending')
     root.layout.addWidget(root.label_start, 0, 1)
