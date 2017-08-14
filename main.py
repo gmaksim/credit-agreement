@@ -292,7 +292,7 @@ class AddingMode(QWidget):
             elif data_to_insert[3] == '':
                 QMessageBox.warning(self, 'Warning', 'Please add agreement')
             else:
-                self.loop_in_creed_agr()  # (TO-DO) check for folders exists
+                commit_info_to_db()  # (TO-DO) check for folders (cred line) exists
         self.pt1_data_saver = []
         def commit_info_to_db():  # run function by button with param.
             data_to_insert = self.collect_data_with_comboboxes()
@@ -838,7 +838,24 @@ class UpdatingMode(QWidget):
 
 
 class ViewMode(QWidget):
-    pass
+    def __init__(self):
+        super().__init__()
+        self.view_test()
+
+    def view_test(self):
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        self.setGeometry(100, 100, 600, 500)
+        self.setWindowTitle('AddingMode (Part 1 of 4)')
+        self.layout.setAlignment(Qt.AlignCenter)
+
+        self.label_start = QLabel('TEST')
+        self.layout.addWidget(self.label_start, 0, 0)
+
+
+
+        self.show()
+
 
 # for catching pyqt c++ errors
 sys._excepthook = sys.excepthook
@@ -851,33 +868,32 @@ sys.excepthook = my_exception_hook
 
 def main():
     app = QApplication(sys.argv)
+    v = ViewMode()
 
-    def start_adding_mode():
-
-        # root.destroy()
-        AddingMode()
-        sys.exit(app)
-
-    def start_view_mode():
-        ViewMode()
-
-    root = QWidget()
-    root.layout = QGridLayout()
-    root.setLayout(root.layout)
-    root.setGeometry(100, 100, 600, 500)
-    root.setWindowTitle('cre.prog.')
-    root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - in progress\nUPDATE MODE - pending')
-    root.layout.addWidget(root.label_start, 0, 1)
-
-    root.butt = QPushButton(text='start adding')
-    root.butt.clicked.connect(start_adding_mode)
-    root.layout.addWidget(root.butt, 1, 1)
-
-    root.butt = QPushButton(text='start view')
-    root.butt.clicked.connect(start_view_mode)
-    root.layout.addWidget(root.butt, 2, 1)
-
-    root.show()
+    # def start_adding_mode():
+    #     AddingMode()
+    #
+    # def start_view_mode():
+    #     ViewMode()
+    #
+    #
+    # root = QWidget()
+    # root.layout = QGridLayout()
+    # root.setLayout(root.layout)
+    # root.setGeometry(100, 100, 600, 500)
+    # root.setWindowTitle('cred.agr.prog.')
+    # root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - in progress\nUPDATE MODE - pending')
+    # root.layout.addWidget(root.label_start, 0, 1)
+    #
+    # root.butt = QPushButton(text='start adding')
+    # root.butt.clicked.connect(start_adding_mode)
+    # root.layout.addWidget(root.butt, 1, 1)
+    #
+    # root.butt = QPushButton(text='start view')
+    # root.butt.clicked.connect(start_view_mode)
+    # root.layout.addWidget(root.butt, 2, 1)
+    #
+    # root.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
