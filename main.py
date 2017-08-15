@@ -1,11 +1,13 @@
 from PyQt5.QtWidgets import \
-    (QWidget, QPushButton, QApplication, QLabel, QComboBox, QLineEdit, QGridLayout, QMessageBox, QSizePolicy)
-from PyQt5.QtCore import Qt
+    (QWidget, QPushButton, QApplication, QLabel, QComboBox, QLineEdit, QGridLayout, QMessageBox, QListWidget,
+     QFrame)
+from PyQt5.QtCore import QCoreApplication, Qt
 import os
 import sqlite3
 import sys
 
 
+# check loop_add (saves old var. of type (?))
 class AddingMode(QWidget):
     def __init__(self):
         super().__init__()
@@ -837,24 +839,121 @@ class UpdatingMode(QWidget):
     pass
 
 
+class SearchMode(QWidget):
+    pass
+
+
 class ViewMode(QWidget):
     def __init__(self):
         super().__init__()
-        self.view_test()
 
-    def view_test(self):
+        self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
+                            'List of part. or sharehold.', 'Main contract',
+                            'Official correspondence', 'Questionnaire')
+        self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
+                             'Official correspondence', 'Questionnaire', 'Russian passport')
+
+        self.view_cred_line_and_agr()
+
+    def fill_listbox(self, table_name, up_down, right_left):
+        list = QListWidget(self)
+        self.layout.addWidget(list, up_down, right_left)
+        for item in table_name:
+            list.addItem(item[0])
+
+    @staticmethod
+    def arrange_labels(place, list_with_names, up_down, step_right_left, step_up_down):
+        start = 0
+        right_left = 1
+        while start != len(list_with_names):
+            label_name = QLabel(list_with_names[start])
+            place.addWidget(label_name, up_down, right_left)
+            start += 1
+            right_left += step_right_left
+            up_down += step_up_down
+
+    def view_cred_line_and_agr(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
         self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 1 of 4)')
+        self.setWindowTitle('View mode')
         self.layout.setAlignment(Qt.AlignCenter)
 
-        self.label_start = QLabel('TEST')
-        self.layout.addWidget(self.label_start, 0, 0)
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
 
+        labels_name = ['Name', 'Type', 'Date', '          ', 'Agreement', 'Agr. date']
+        self.arrange_labels(self.layout, labels_name, 0, 1, 0)
 
+        cursor.execute('SELECT Name FROM NameAgreement GROUP BY idSend')
+        name = cursor.fetchall()
+        self.names = QListWidget(self)
+        self.layout.addWidget(self.names, 1, 1)
+        for item in name:
+            self.names.addItem(item[0])
+        cursor.execute('SELECT Type FROM NameAgreement GROUP BY idSend')
+        types = cursor.fetchall()
+        self.fill_listbox(types, 1, 2)
+        cursor.execute('SELECT Date FROM NameAgreement GROUP BY idSend')
+        dates = cursor.fetchall()
+        self.fill_listbox(dates, 1, 3)
 
+        self.agreems = QListWidget(self)
+        self.layout.addWidget(self.agreems, 1, 5)
+        self.agrdates = QListWidget(self)
+        self.layout.addWidget(self.agrdates, 1, 6)
+
+        self.names.clicked.connect(self.fill_cred_agr_by_cred_line)
+        self.agreems.clicked.connect(self.fill_docs_and_attributes)
+
+        conn.close()
         self.show()
+
+    def fill_cred_agr_by_cred_line(self):
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
+
+        position_in_lb = self.names.currentRow()  # take position in cred.line lb
+        position_in_lb = str(position_in_lb + 1)
+
+        cursor.execute('SELECT Agreement FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+                       (position_in_lb,))  # '()' and ',' - it's important!
+        aagre_table = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
+        self.agreems.clear()
+        for item in aagre_table:
+            self.agreems.addItem(item[0])
+
+        cursor.execute('SELECT AgrDate FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+                       (position_in_lb,))
+        agrdates = cursor.fetchall()
+        self.agrdates.clear()
+        for item2 in agrdates:
+            self.agrdates.addItem(item2[0])
+
+        cursor.execute('SELECT Type FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+                       (position_in_lb,))  # '()' and ',' - it's important!
+        curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
+        self.curr_type_cred_line = curr_type_cred_line[0]
+
+        conn.close()
+
+    def fill_docs_and_attributes(self):
+        self.label_name.clear()
+
+        if self.curr_type_cred_line[0] == 'Entrepreneur':
+
+            attrib_labels = self.folders_entr
+
+        else:
+            attrib_labels = self.folders_org
+
+        start = 0
+        up_down = 2
+        while start != len(attrib_labels):
+            self.label_name = QLabel(attrib_labels[start])
+            self.layout.addWidget(self.label_name, up_down, 1)
+            start += 1
+            up_down += 1
 
 
 # for catching pyqt c++ errors
@@ -868,13 +967,14 @@ sys.excepthook = my_exception_hook
 
 def main():
     app = QApplication(sys.argv)
+
     v = ViewMode()
 
     # def start_adding_mode():
     #     AddingMode()
     #
     # def start_view_mode():
-    #     ViewMode()
+    #     v = ViewMode()
     #
     #
     # root = QWidget()
