@@ -4,6 +4,7 @@ from PyQt5.QtCore import Qt
 import os
 import sqlite3
 import sys
+import re
 
 # check loop_add (saves old var. of type (?))
 class AddingMode(QWidget):
@@ -938,21 +939,21 @@ class ViewMode(QWidget):
         self.position_in_lb = self.names.currentRow()  # take position in cred.line lb
         self.position_in_lb = str(self.position_in_lb + 1)
 
-        cursor.execute('SELECT Agreement FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+        cursor.execute('SELECT Agreement FROM NameAgreement WHERE idSend = (?)',
                        (self.position_in_lb,))  # '()' and ',' - it's important!
         aagre_table = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
         self.agreems.clear()
         for item in aagre_table:
             self.agreems.addItem(item[0])
 
-        cursor.execute('SELECT AgrDate FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+        cursor.execute('SELECT AgrDate FROM NameAgreement WHERE idSend = (?)',
                        (self.position_in_lb,))
         agrdates = cursor.fetchall()
         self.agrdates.clear()
         for item2 in agrdates:
             self.agrdates.addItem(item2[0])
 
-        cursor.execute('SELECT Type FROM NameAgreement WHERE idSend = (?) ORDER BY id DESC',
+        cursor.execute('SELECT Type FROM NameAgreement WHERE idSend = (?)',
                        (self.position_in_lb,))  # '()' and ',' - it's important!
         curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
         self.curr_type_cred_line = curr_type_cred_line[0]
@@ -960,49 +961,97 @@ class ViewMode(QWidget):
         conn.close()
 
     def fill_docs_and_attributes(self):
+        self.position_in_lb_right = int(self.agreems.currentRow())
+        conn = sqlite3.connect('DATA//firstBase.sqlite')
+        cursor = conn.cursor()
+
         if self.curr_type_cred_line[0] == 'Entrepreneur':
-            conn = sqlite3.connect('DATA//firstBase.sqlite')
-            cursor = conn.cursor()
             cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
                            'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
-
-
-            # take position and change (inside idSend!)
-
-            name = cursor.fetchall()
-            print(name)
-
-            conn.close()
-
         else:
-
-            conn = sqlite3.connect('DATA//firstBase.sqlite')
-            cursor = conn.cursor()
-
-            self.position_in_lb = int(self.position_in_lb) + 1
-            str(self.position_in_lb)
-
             cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
                            'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
 
+        name = cursor.fetchall()
+
+
+        try:
+            # print(name[self.position_in_lb_right])
+
+            def arrange_info(place, step_down, list_with_words, attribute_len):
+                self.data_from_attrib = []
+
+                word = 0
+                step = 2
+                for i in attribute_len:  # i = quantity of needed labels
+                    start = 0
+                    offset = 2
+                    while start != i:
+                        entry = QLineEdit(list_with_words[word])
+                        place.addWidget(entry, step, offset)
+                        self.data_from_attrib.append(entry)
+                        start += 1
+                        offset += 1
+                        word += 1
+                    step += step_down
 
 
 
-            name = cursor.fetchall()
-            print(name)
+            def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+                self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
+                self.Application = ('Profile Date',)
+                self.ApprovalTran = ('meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary')
+                self.ConsentSpou = ('Date',)
+                self.ExtractUSRLE = ('date of issue', 'director', 'members of society')
+                self.ListParShare = ('list Date', 'Member №1', 'member share №1', 'Member №2', 'member share №2')
+                self.MainContract = ('The lender / guarantor', 'Borrower / Principal', 'beneficiary', 'contract number',
+                                     'Date of contract', 'The amount of the transaction', 'Contract fee Period',
+                                     'Signatory of the Creditor', 'Signatory of the Borrower')
+                self.OfficialCorr = (
+                'Sender', 'Destination', 'Outgoing №', 'Date Outgoing №', 'Incoming №', 'Date Incoming №')
+                self.Questionnaire = ('Profile Date',)
+                self.RussianPassp = ('Number',)
 
-            conn.close()
+                self.len_attrib = []
 
-            pass
+                if self.curr_type_cred_line[0] == 'Organization':
+                    self.len_attrib.append(len(self.Adjudications))  # Aou
+                    self.len_attrib.append(len(self.Application))  # Aou
+                    self.len_attrib.append(len(self.ApprovalTran))  # o
+                    self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                    self.len_attrib.append(len(self.ListParShare))  # o
+                    self.len_attrib.append(len(self.MainContract))  # Aou
+                    self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                else:
+                    self.len_attrib.append(len(self.Adjudications))  # Aou
+                    self.len_attrib.append(len(self.Application))  # Aou
+                    self.len_attrib.append(len(self.ConsentSpou))  # U
+                    self.len_attrib.append(len(self.MainContract))  # Aou
+                    self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.RussianPassp))  # U
+                return self.len_attrib
+
+            attribute_len_list = receive_list_with_len_attributes()
 
 
 
+            text = name[self.position_in_lb_right][0]
+            text = re.split(', ', text)
+            text = re.split('\'', text)
+            print(text)
 
 
 
+            arrange_info(place=self.layout, step_down=1, list_with_words=name[self.position_in_lb_right],
+                         attribute_len=attribute_len_list)
 
 
 
+        except IndexError:
+            print('variant with no info add')
+        conn.close()
 
 
 # for catching pyqt c++ errors
