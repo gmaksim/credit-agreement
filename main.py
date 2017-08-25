@@ -974,12 +974,27 @@ class ViewMode(QWidget):
 
         name = cursor.fetchall()
 
-
         try:
-            # print(name[self.position_in_lb_right])
-
             def arrange_info(place, step_down, list_with_words, attribute_len):
                 self.data_from_attrib = []
+
+                clear_words = []
+                w = 0
+                while w != len(list_with_words):
+                    text = name[self.position_in_lb_right][w]
+                    print('qq', text)
+                    qw = text.split(r', ')
+                    print('fdsfds', qw)
+                    for i in qw:
+                        i = re.sub(r'\'', '', i)
+                        i = re.sub(r'\[', '', i)
+                        i = re.sub(r'\]', '', i)
+                        clear_words.append(i)
+                    w += 1
+
+
+                list_with_words = clear_words
+                print(list_with_words)
 
                 word = 0
                 step = 2
@@ -994,8 +1009,6 @@ class ViewMode(QWidget):
                         offset += 1
                         word += 1
                     step += step_down
-
-
 
             def receive_list_with_len_attributes():  # (TO-DO) make flexible func
                 self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
@@ -1031,23 +1044,23 @@ class ViewMode(QWidget):
                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
                     self.len_attrib.append(len(self.Questionnaire))  # Aou
                     self.len_attrib.append(len(self.RussianPassp))  # U
+                print(self.len_attrib)
                 return self.len_attrib
-
             attribute_len_list = receive_list_with_len_attributes()
 
 
-
-            text = name[self.position_in_lb_right][0]
-            text = re.split(', ', text)
-            text = re.split('\'', text)
-            print(text)
-
-
+            # clear_words = []
+            # text = name[self.position_in_lb_right][0]
+            # qw = text.split(r', ')
+            # for i in qw:
+            #     i = re.sub(r'\'', '', i)
+            #     i = re.sub(r'\[', '', i)
+            #     i = re.sub(r'\]', '', i)
+            #     clear_words.append(i)
+            # print(clear_words)
 
             arrange_info(place=self.layout, step_down=1, list_with_words=name[self.position_in_lb_right],
                          attribute_len=attribute_len_list)
-
-
 
         except IndexError:
             print('variant with no info add')
