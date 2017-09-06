@@ -980,28 +980,29 @@ class ViewMode(QWidget):
 
                 clear_words = []
                 w = 0
-                while w != len(list_with_words):
-                    text = name[self.position_in_lb_right][w]
-                    print('qq', text)
-                    qw = text.split(r', ')
-                    print('fdsfds', qw)
-                    for i in qw:
-                        i = re.sub(r'\'', '', i)
-                        i = re.sub(r'\[', '', i)
-                        i = re.sub(r'\]', '', i)
-                        clear_words.append(i)
-                    w += 1
-
+                try:
+                    while w != len(list_with_words):
+                        text = name[self.position_in_lb_right][w]
+                        qw = text.split(r', ')
+                        for i in qw:
+                            i = re.sub(r'\'', '', i)
+                            i = re.sub(r'\[', '', i)
+                            i = re.sub(r'\]', '', i)
+                            clear_words.append(i)
+                        w += 1
+                except AttributeError:
+                    pass
 
                 list_with_words = clear_words
-                print(list_with_words)
-
                 word = 0
                 step = 2
+                print('11     ', attribute_len)
                 for i in attribute_len:  # i = quantity of needed labels
                     start = 0
                     offset = 2
+                    print('22   ', i)
                     while start != i:
+                        print('33     ', list_with_words[word])
                         entry = QLineEdit(list_with_words[word])
                         place.addWidget(entry, step, offset)
                         self.data_from_attrib.append(entry)
@@ -1044,26 +1045,15 @@ class ViewMode(QWidget):
                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
                     self.len_attrib.append(len(self.Questionnaire))  # Aou
                     self.len_attrib.append(len(self.RussianPassp))  # U
-                print(self.len_attrib)
                 return self.len_attrib
             attribute_len_list = receive_list_with_len_attributes()
-
-
-            # clear_words = []
-            # text = name[self.position_in_lb_right][0]
-            # qw = text.split(r', ')
-            # for i in qw:
-            #     i = re.sub(r'\'', '', i)
-            #     i = re.sub(r'\[', '', i)
-            #     i = re.sub(r'\]', '', i)
-            #     clear_words.append(i)
-            # print(clear_words)
 
             arrange_info(place=self.layout, step_down=1, list_with_words=name[self.position_in_lb_right],
                          attribute_len=attribute_len_list)
 
         except IndexError:
-            print('variant with no info add')
+            # here
+            pass
         conn.close()
 
 
