@@ -6,7 +6,9 @@ import sqlite3
 import sys
 import re
 
+
 # check loop_add (saves old var. of type (?))
+# add check (if NULL send in DB make some symbol
 class AddingMode(QWidget):
     def __init__(self):
         super().__init__()
@@ -857,6 +859,7 @@ class ViewMode(QWidget):
 
         self.view_cred_line_and_agr()
 
+
     def fill_listbox(self, table_name, up_down, right_left):
         list = QListWidget(self)
         self.layout.addWidget(list, up_down, right_left)
@@ -893,6 +896,21 @@ class ViewMode(QWidget):
 
         return self.data_from_attrib
 
+    def clear_qline(self):
+        step2 = 2
+        step_down = 1
+        null_list = [9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+        for e in null_list:
+            start2 = 0
+            offset2 = 2
+            while start2 != e:
+                entry = QLineEdit('')
+                entry.setEnabled(False)
+                self.layout.addWidget(entry, step2, offset2)
+                start2 += 1
+                offset2 += 1
+            step2 += step_down
+
     def view_cred_line_and_agr(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
@@ -903,7 +921,7 @@ class ViewMode(QWidget):
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
 
-        labels_name = ['Name', 'Type', 'Date', '          ', 'Agreement', 'Agr. date']
+        labels_name = ['Name', 'Type', 'Date', '', 'Agreement', 'Agr. date']
         self.arrange_labels(self.layout, labels_name, 0, 1, 0)
 
         self.arrange_labels(self.layout, self.folder_org_entr, 2, 0, 1)
@@ -929,8 +947,10 @@ class ViewMode(QWidget):
         self.names.clicked.connect(self.fill_cred_agr_by_cred_line)
         self.agreems.clicked.connect(self.fill_docs_and_attributes)
 
-        conn.close()
+        self.clear_qline()  # make qline for future selected attributes
+
         self.show()
+        conn.close()
 
     def fill_cred_agr_by_cred_line(self):
         conn = sqlite3.connect('DATA//firstBase.sqlite')
@@ -965,12 +985,13 @@ class ViewMode(QWidget):
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
 
+
         if self.curr_type_cred_line[0] == 'Entrepreneur':
             cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
                            'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
         else:
-            cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
-                           'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
+            cursor.execute('SELECT Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, MainContract, '
+                           'OfficialCorr, Questionnaire FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
 
         name = cursor.fetchall()
 
@@ -996,14 +1017,23 @@ class ViewMode(QWidget):
                 list_with_words = clear_words
                 word = 0
                 step = 2
-                print('11     ', attribute_len)
+
+                self.clear_qline()
+
                 for i in attribute_len:  # i = quantity of needed labels
                     start = 0
                     offset = 2
-                    print('22   ', i)
                     while start != i:
-                        print('33     ', list_with_words[word])
                         entry = QLineEdit(list_with_words[word])
+                        entry.setReadOnly(True)
+                        if len(attribute_len) == 7:  # make skips for attributes
+                            if step == 4:
+                                step += 1
+                            if step == 6:
+                                step += 2
+                        else:
+                            if step == 5:
+                                step += 1
                         place.addWidget(entry, step, offset)
                         self.data_from_attrib.append(entry)
                         start += 1
@@ -1050,9 +1080,8 @@ class ViewMode(QWidget):
 
             arrange_info(place=self.layout, step_down=1, list_with_words=name[self.position_in_lb_right],
                          attribute_len=attribute_len_list)
-
         except IndexError:
-            # here
+            # self.clear_qline()
             pass
         conn.close()
 
@@ -1067,25 +1096,31 @@ sys.excepthook = my_exception_hook
 
 
 def main():
-
     app = QApplication(sys.argv)
 
     v = ViewMode()
 
     print('PROGRAM IN DEBUG MODE, FOR CHECK ADDING MODE, UNCOMMENT LINES BELOW')
+
+    # v.hide()
     # def start_adding_mode():
-    #     AddingMode()
-    #
+    #     start_mode(mode='a')
     # def start_view_mode():
-    #     v = ViewMode()
+    #     start_mode(mode='v')
     #
+    # def start_mode(mode):
+    #     if mode == 'a':
+    #         a = AddingMode()
+    #         a.show()
+    #     if mode == 'v':
+    #         v.show()
     #
     # root = QWidget()
     # root.layout = QGridLayout()
     # root.setLayout(root.layout)
     # root.setGeometry(100, 100, 600, 500)
     # root.setWindowTitle('cred.agr.prog.')
-    # root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - in progress\nUPDATE MODE - pending')
+    # root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - 60%\nUPDATE AND SEARCHING MODE - pending')
     # root.layout.addWidget(root.label_start, 0, 1)
     #
     # root.butt = QPushButton(text='start adding')
@@ -1097,6 +1132,7 @@ def main():
     # root.layout.addWidget(root.butt, 2, 1)
     #
     # root.show()
+
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
