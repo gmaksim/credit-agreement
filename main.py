@@ -7,47 +7,47 @@ import sys
 import re
 
 
-# check loop_add (saves old var. of type (?))
-# add check (if NULL send in DB make some symbol
+# add check " and \ and another 'stop windows os symbol'
+# add check (if NULL send in DB make some symbol)
 class AddingMode(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.create_db_and_tables()
         self.last_number_id_res = self.get_sendid_from_db(table_name='NameAgreement')
         self.agree_global = 'none_dirs'  # to know with which agreement we work
         self.gp_global = 'none dirs'
 
         # Start block
-        self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
-                            'List of part. or sharehold.', 'Main contract',
-                            'Official correspondence', 'Questionnaire')
-        self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
-                             'Official correspondence', 'Questionnaire', 'Russian passport')
+        self.folders_org = ('Анкета', 'Выписка ЕГРЮЛ', 'Заявка', 'Одобрение сделки',
+                            'Основной договор', 'Официальная переписка',
+                            'Список участников и реестр акционеров', 'Судебные решения')
+        self.folders_entr = ('Анкета', 'Заявка', 'Основной договор', 'Официальная переписка',
+                             'Паспорт РФ', 'Согласие супруга', 'Судебные решения')
         self.checking_files_done = None
 
         # GuPl block
-        self.folders_gp_org = ('Adjudications', 'Approval of the transaction', 'Consent to the encumbrance',
-                               'Extract USRLE', 'Official correspondence', 'Questionnaire',
-                               'Surety agreement OR pledge')
-        self.folders_gp_entr = ('Adjudications', 'Consent to the encumbrance', 'Official correspondence',
-                                'Questionnaire', 'Russian passport', 'Surety agreement OR pledge')
+        self.folders_gp_org = ('Анкета', 'Выписка ЕГРЮЛ', 'Дог-р пор-ва или залога',
+                               'Одобрение сделки', 'Официальная переписка', 'Согласия на обременения',
+                               'Судебные решения')
+        self.folders_gp_entr = ('Анкета', 'Дог-р пор-ва или залога', 'Официальная переписка',
+                                'Паспорт РФ', 'Согласия на обременения', 'Судебные решения')
 
         # Optional block
-        self.folder_grp_obj = ('Certificate of ownership', 'Contract of sale', 'Extract USRRE')
+        self.folder_grp_obj = ('Выписка ЕГРН', 'Договор купли-продажи', 'Свидетельство о праве собственности')
 
         # Start block
-        self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
-        self.Application = ('Profile Date',)
-        self.ApprovalTran = ('meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary')
-        self.ConsentSpou = ('Date',)
-        self.ExtractUSRLE = ('date of issue', 'director', 'members of society')
-        self.ListParShare = ('list Date', 'Member №1', 'member share №1', 'Member №2', 'member share №2')
-        self.MainContract = ('The lender / guarantor', 'Borrower / Principal', 'beneficiary', 'contract number',
-                             'Date of contract', 'The amount of the transaction', 'Contract fee Period',
-                             'Signatory of the Creditor', 'Signatory of the Borrower')
-        self.OfficialCorr = ('Sender', 'Destination', 'Outgoing №', 'Date Outgoing №', 'Incoming №', 'Date Incoming №')
-        self.Questionnaire = ('Profile Date',)
-        self.RussianPassp = ('Number',)
+        self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
+        self.Application = ('Дата анкеты',)
+        self.ApprovalTran = ('Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
+        self.ConsentSpou = ('Дата согласия',)
+        self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
+        self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
+        self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
+                             'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
+                             'Подписант от Кредитора', 'Подписант от Заемщика')
+        self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
+        self.Questionnaire = ('Дата анкеты',)
+        self.RussianPassp = ('Серия и номер',)
         self.sum_org_attr = (self.Adjudications + self.Application + self.ApprovalTran + self.ExtractUSRLE +
                              self.ListParShare + self.MainContract + self.OfficialCorr + self.Questionnaire)
         self.sum_entr_attr = (self.Adjudications + self.Application + self.ConsentSpou + self.MainContract +
@@ -56,10 +56,10 @@ class AddingMode(QWidget):
 
 
         # GuPl block
-        self.ConsEncumb = ('Date of approval', 'Address of the object', 'Cadastral (or conditional) number',
-                           'type of encumbrances', 'term of agreement')
-        self.SuretAgrPledg = ('agreement date', 'The lender / guarantor', 'Guarantor / Pledgor', 'term maintenance',
-                              'Reg.number account on mortgage')
+        self.ConsEncumb = ('Дата согласия', 'Адрес объекта', 'Кадастровый (или условный) номер',
+                           'Тип обременения', 'Срок согласия')
+        self.SuretAgrPledg = ('Дата договора', 'Кредитор / Гарант', 'Поручитель / Залогодатель', 'Срок обеспечения',
+                              'Рег.номер записи об ипотеке')
 
         self.sum_gp_org_attr = (self.Adjudications + self.ApprovalTran + self.ConsentSpou + self.ExtractUSRLE
                                 + self.OfficialCorr + self.Questionnaire + self.SuretAgrPledg)
@@ -67,10 +67,10 @@ class AddingMode(QWidget):
                                  + self.RussianPassp + self.SuretAgrPledg)
 
         # Optional block
-        self.CertifOwner = ('evidence Date', 'Address of the object', 'Cadastral (or conditional) number')
-        self.ContrSale = ('Seller', 'Buyer', 'agreement date', 'Address of the object',
-                           'Cadastral (or conditional) number')
-        self.ExtracUSRRE = ('date of issue', 'Address of the object', 'Cadastral (or conditional) number')
+        self.CertifOwner = ('Дата свидетельства', 'Адрес объекта', 'Кадастровый (или условный) номер')
+        self.ContrSale = ('Продавец', 'Покупатель', 'Дата договора', 'Адрес объекта',
+                           'Кадастровый (или условный) номер')
+        self.ExtracUSRRE = ('Дата выписки', 'Адрес объекта', 'Кадастровый (или условный) номер')
         self.sum_grp_obj_ttr = (self.CertifOwner + self.ContrSale + self.ExtracUSRRE)
 
         self.pt1_start_adding()
@@ -258,7 +258,7 @@ class AddingMode(QWidget):
             step += 2
 
         # check for start add_attribute func
-        null_documents = ['Adjudications', 'Official correspondence', 'Consent to the encumbrance']
+        null_documents = ['Судебные решения', 'Официальная переписка', 'Согласия на обременения']
         for q in null_documents:
             for i in dirs_without_docs:
                 if i == q:
@@ -267,7 +267,7 @@ class AddingMode(QWidget):
         if dirs_without_docs == []:
             self.checking_files_done = True
         else:
-            QMessageBox.information(self, 'Information', 'Please add files')
+            QMessageBox.information(self, 'Информация', 'Пожалуйста добавьте файлы')
             self.checking_files_done = False
 
         return self.checking_files_done
@@ -275,15 +275,15 @@ class AddingMode(QWidget):
     def pt1_start_adding(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 1 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 1/4.')
         self.layout.setAlignment(Qt.AlignCenter)
 
-        self.label_start = QLabel('Add name of organization and # of agreement')
+        self.label_start = QLabel('Добавьте название организации, дату и договор')
         self.layout.addWidget(self.label_start, 0, 1)
 
-        admode_pt1_labels = ['Name', 'Type', 'Date', 'Agreement', 'Agr. date']
-        admode_pt1_cmbbox = ['Organization', 'Entrepreneur']
+        admode_pt1_labels = ['Название', 'Тип', 'Дата', 'Договор', 'Дата договора']
+        admode_pt1_cmbbox = ['Организация', 'Предприниматель']
         self.arrange_labels(place=self.layout, list_with_names=admode_pt1_labels, step_down=1)
         self.arrange_entries_for_comboboxes(place=self.layout, column=1, step_down=1, total=3)  # (TO-DO) insert date
         self.arrange_comboboxes(place=self.layout, list_with_types=admode_pt1_cmbbox, list_with_types_2=0)
@@ -291,9 +291,9 @@ class AddingMode(QWidget):
         def check_data():
             data_to_insert = self.collect_data_with_comboboxes()
             if data_to_insert[0] == '':
-                QMessageBox.warning(self, 'Warning', 'Please add name')
+                QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте имя')
             elif data_to_insert[3] == '':
-                QMessageBox.warning(self, 'Warning', 'Please add agreement')
+                QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте договор')
             else:
                 commit_info_to_db()  # (TO-DO) check for folders (cred line) exists
         self.pt1_data_saver = []
@@ -313,7 +313,7 @@ class AddingMode(QWidget):
             self.pt1_data_saver.append(data_to_insert[2])
             self.transfer_input_to_pt2 = self.collect_data_with_comboboxes()
             self.pt2_put_files()
-        self.butt = QPushButton(text='Save and next step')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 6, 1)
 
@@ -322,12 +322,12 @@ class AddingMode(QWidget):
     def pt1_start_adding_again(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add # of agreement')
+        self.label_start = QLabel('Добавьте следующий договор')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingModeAgain (Part 1 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 1/4.')
 
-        admode_pt1_labels = ['Agreement', 'Agr. date']
+        admode_pt1_labels = ['Договор', 'Дата договора']
         self.arrange_labels(place=self.layout, list_with_names=admode_pt1_labels, step_down=1)
 
         self.entry = QLineEdit()
@@ -340,7 +340,7 @@ class AddingMode(QWidget):
             self.data_ins_one = self.entry2.text()
 
             if self.data_ins_zero == '':
-                QMessageBox.warning(self, 'Warning', 'Please add agreement')
+                QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте договор')
             else:
                 commit_info_to_db()
         def commit_info_to_db():
@@ -358,7 +358,7 @@ class AddingMode(QWidget):
             self.transfer_input_to_pt2.insert(4, self.data_ins_one)
             self.transfer_input_to_pt2.pop(5)
             self.pt2_put_files()
-        self.butt = QPushButton(text='Save and next step')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 6, 1)
 
@@ -380,7 +380,7 @@ class AddingMode(QWidget):
             os.makedirs(q)
             os.chdir(q)
 
-            if data_to_insert[1] == 'Organization':
+            if data_to_insert[1] == 'Организация':
                 folders = self.folders_org
             else:
                 folders = self.folders_entr
@@ -394,21 +394,21 @@ class AddingMode(QWidget):
 
         self.clear_gui()
 
-        self.label_start = QLabel('Put files in folders')
+        self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 2 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 2/4.')
 
         self.len_folder = 0
         self.type_is = 'None'
-        if data_to_insert[1] == 'Organization':
+        if data_to_insert[1] == 'Организация':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
             self.len_folder = len(self.folders_org)
-            self.type_is = 'Organization'
+            self.type_is = 'Организация'
         else:
             self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
             self.len_folder = len(self.folders_entr)
-            self.type_is = 'Entrepreneur'
+            self.type_is = 'Предприниматель'
 
         self.arrange_color_labels(place=self.layout, total=self.len_folder)
 
@@ -416,19 +416,19 @@ class AddingMode(QWidget):
             result = self.check_files_in_folder()
             if result is True:
                 self.pt2_adding_attributes_for_files()
-        self.butt = QPushButton(text='Check files in folder')
+        self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
         self.layout.addWidget(self.butt, 17, 1)
 
     def pt2_adding_attributes_for_files(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add attributes\nfor documents')
+        self.label_start = QLabel('Добавьте аттрибуты для документов')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 2 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 2/4.')
 
-        if self.type_is == 'Organization':
+        if self.type_is == 'Организация':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
             words = self.sum_org_attr
         else:
@@ -437,7 +437,7 @@ class AddingMode(QWidget):
 
         def receive_list_with_len_attributes():  # (TO-DO) make flexible func
             self.len_attrib = []
-            if self.type_is == 'Organization':
+            if self.type_is == 'Организация':
                 self.len_attrib.append(len(self.Adjudications))  # Aou
                 self.len_attrib.append(len(self.Application))  # Aou
                 self.len_attrib.append(len(self.ApprovalTran))  # o
@@ -475,7 +475,7 @@ class AddingMode(QWidget):
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))  # DEBUG
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            if self.type_is == 'Organization':  # (TO-DO) do it shorter
+            if self.type_is == 'Организация':  # (TO-DO) do it shorter
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
                 c = str(separate_list_with_attributes[2])
@@ -503,21 +503,21 @@ class AddingMode(QWidget):
             conn.commit()
             conn.close()
             self.pt3_adding_guar_pled()
-        self.butt = QPushButton(text='Save information')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(commit_info_pt2_to_db)
         self.layout.addWidget(self.butt, 17, 0)
 
     def pt3_adding_guar_pled(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add pledgor or guarantor')
+        self.label_start = QLabel('Добавьте поручителя или залогодателя')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 3 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
-        admode_pt3_labels = ['Name', 'Type', 'Type 2', 'Date']
-        admode_pt3_cmbbox = ['Guarantor', 'Pledgor']
-        admode_pt3_cmbbox_2 = ['Organization', 'Entrepreneur']
+        admode_pt3_labels = ['Название', 'Тип', 'Тип 2', 'Дата']
+        admode_pt3_cmbbox = ['Поручитель', 'Залогодатель']
+        admode_pt3_cmbbox_2 = ['Организация', 'Предприниматель']
         self.arrange_labels(place=self.layout, list_with_names=admode_pt3_labels, step_down=1)
         self.arrange_entries_for_comboboxes(place=self.layout, column=1, step_down=1, total=2)
         self.arrange_comboboxes(place=self.layout, list_with_types=admode_pt3_cmbbox,
@@ -526,7 +526,7 @@ class AddingMode(QWidget):
         def check_data():
             data_to_insert = self.collect_data_with_comboboxes()
             if data_to_insert[0] == '':
-                QMessageBox.warning(self, 'Warning', 'Please add name')
+                QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте имя')
             else:
                 commit_info_to_db()  # (TO-DO) check for folders exists
         def commit_info_to_db():
@@ -541,7 +541,7 @@ class AddingMode(QWidget):
             conn.commit()
             conn.close()
             self.pt4_put_files_gu_pl()
-        self.butt = QPushButton(text='Save and next step')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 5, 1)
 
@@ -563,7 +563,7 @@ class AddingMode(QWidget):
                 os.makedirs(q)
                 os.chdir(q)
 
-                if self.type_is == 'Organization':  # and Pledgor (delete)
+                if self.type_is == 'Организация':  # and Pledgor (delete)
                     folders = self.folders_gp_org
                 else:
                     folders = self.folders_gp_entr
@@ -577,13 +577,13 @@ class AddingMode(QWidget):
 
         self.clear_gui()
 
-        self.label_start = QLabel('Put files in folders')
+        self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 3 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
         self.len_folder = 0
-        if self.type_is == 'Organization':
+        if self.type_is == 'Организация':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
             self.len_folder = len(self.folders_gp_org)
         else:
@@ -596,19 +596,19 @@ class AddingMode(QWidget):
             result = self.check_files_in_folder()
             if result is True:
                 self.pt4_adding_attributes_for_files_gp()
-        self.butt = QPushButton(text='Check files in folder')
+        self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
         self.layout.addWidget(self.butt, 17, 1)
 
     def pt4_adding_attributes_for_files_gp(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add attributes for documents')
+        self.label_start = QLabel('Добавьте аттрибуты для документов')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 3 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
-        if self.type_is == 'Organization':
+        if self.type_is == 'Организация':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
             words = self.sum_gp_org_attr
         else:
@@ -617,7 +617,7 @@ class AddingMode(QWidget):
 
         def receive_list_with_len_attributes_pg():
             self.len_attrib = []
-            if self.type_is == 'Organization':
+            if self.type_is == 'Организация':
                 self.len_attrib.append(len(self.Adjudications))  # Aou
                 self.len_attrib.append(len(self.ApprovalTran))  # o
                 self.len_attrib.append(len(self.ConsentSpou))  # o
@@ -653,7 +653,7 @@ class AddingMode(QWidget):
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
 
-            if self.type_is == 'Organization':  # (TO-DO) do it shorter
+            if self.type_is == 'Организация':  # (TO-DO) do it shorter
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
                 c = str(separate_list_with_attributes[2])
@@ -680,23 +680,23 @@ class AddingMode(QWidget):
             conn.commit()
             conn.close()
 
-            if self.type_g_or_p == 'Pledgor':
+            if self.type_g_or_p == 'Залогодатель':
                 self.pt5_optional_adding_groups_obj()
             else:
                 self.loop_in_guaran_pled()
-        self.butt = QPushButton(text='Save information')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(commit_info_pt4_to_db)
         self.layout.addWidget(self.butt, 17, 0)
 
     def pt5_optional_adding_groups_obj(self):
         self.clear_gui()
 
-        self.label_start = QLabel('Add groups of objects')
+        self.label_start = QLabel('Добавьте групповой объект')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 4 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
-        self.arrange_labels(place=self.layout, list_with_names=['Name'], step_down=1)
+        self.arrange_labels(place=self.layout, list_with_names=['Название'], step_down=1)
         combo = QLineEdit()
         self.layout.addWidget(combo, 1, 1)
 
@@ -704,10 +704,10 @@ class AddingMode(QWidget):
         def check_data():
             self.data_to_insert = combo.text()
             if self.data_to_insert == '':
-                QMessageBox.warning(self, 'Warning', 'Please add name')
+                QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте имя')
             else:
                 self.pt5_optional_check_and_commit()
-        self.butt = QPushButton(text='Save and next step')
+        self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 3, 1)
 
@@ -736,10 +736,10 @@ class AddingMode(QWidget):
 
         self.clear_gui()
 
-        self.label_start = QLabel('Put files in folders')
+        self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('AddingMode (Part 4 of 4)')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
         self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
         self.len_folder = len(self.folder_grp_obj)
@@ -749,17 +749,17 @@ class AddingMode(QWidget):
             result = self.check_files_in_folder()
             if result is True:
                 adding_attributes_for_grp_obj()
-        self.butt = QPushButton(text='Check files in folder')
+        self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
         self.layout.addWidget(self.butt, 17, 1)
 
         def adding_attributes_for_grp_obj():
             self.clear_gui()
 
-            self.label_start = QLabel('Add attributes for documents')
+            self.label_start = QLabel('Добавьте аттрибуты для документов')
             self.layout.addWidget(self.label_start, 0, 0)
-            self.setGeometry(100, 100, 600, 500)
-            self.setWindowTitle('AddingMode (Part 4 of 4)')
+            self.setGeometry(0, 0, 600, 500)
+            self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
             self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
             words = self.sum_grp_obj_ttr
@@ -775,7 +775,7 @@ class AddingMode(QWidget):
                                                                     list_with_words=words,
                                                                     attribute_len=self.attribute_len_list)
 
-            self.butt = QPushButton(text='Save information')
+            self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
             self.butt.clicked.connect(commit_info_to_db)
             self.layout.addWidget(self.butt, 17, 0)
 
@@ -808,25 +808,25 @@ class AddingMode(QWidget):
             self.loop_in_group_obj()
 
     def loop_in_group_obj(self):
-        reply = QMessageBox.question(self, 'Question', 'Add another group object?', QMessageBox.Yes, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Вопрос', 'Добавить другой объект?', QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.pt5_optional_adding_groups_obj()
         else:
             self.loop_in_guaran_pled()
 
     def loop_in_guaran_pled(self):
-        reply = QMessageBox.question(self, 'Question', 'Add another guarantor or pledgor?', QMessageBox.Yes, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Вопрос', 'Добавить другого залогодателя или поручителя?', QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.pt3_adding_guar_pled()
         else:
             self.loop_in_creed_agr()
 
     def loop_in_creed_agr(self):
-        reply = QMessageBox.question(self, 'Question', 'Add another credit agreement?', QMessageBox.Yes, QMessageBox.No)
+        reply = QMessageBox.question(self, 'Вопрос', 'Добавить другой кредитный договор?', QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
             self.pt1_start_adding_again()
         else:
-            print('2')
+            print('NO WORK, FIX IT!')
             main()
 
 
@@ -845,20 +845,18 @@ class SearchMode(QWidget):
 
 
 class ViewMode(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
 
-        self.folder_org_entr = ('Adjudications', 'Application', 'Approval of the transaction', 'Consent of the spouse',
-                                'Extract USRLE', 'List of part. or sharehold.', 'Main contract', 'Official correspondence',
-                                'Questionnaire', 'Russian passport')
-        self.folders_org = ('Adjudications', 'Application', 'Approval of the transaction', 'Extract USRLE',
-                            'List of part. or sharehold.', 'Main contract',
-                            'Official correspondence', 'Questionnaire')
-        self.folders_entr = ('Adjudications', 'Application', 'Consent of the spouse', 'Main contract',
-                             'Official correspondence', 'Questionnaire', 'Russian passport')
-
+        self.folder_org_entr = ('Судебные решения', 'Заявка', 'Одобрение сделки', 'Согласие супруга',
+                                'Выписка ЕГРЮЛ', 'Список участников и реестр акционеров', 'Основной договор', 'Официальная переписка',
+                                'Анкета', 'Паспорт РФ')
+        self.folders_org = ('Анкета', 'Выписка ЕГРЮЛ', 'Заявка', 'Одобрение сделки',
+                            'Основной договор', 'Официальная переписка',
+                            'Список участников и реестр акционеров', 'Судебные решения')
+        self.folders_entr = ('Анкета', 'Заявка', 'Основной договор', 'Официальная переписка',
+                             'Паспорт РФ', 'Согласие супруга', 'Судебные решения')
         self.view_cred_line_and_agr()
-
 
     def fill_listbox(self, table_name, up_down, right_left):
         list = QListWidget(self)
@@ -914,14 +912,14 @@ class ViewMode(QWidget):
     def view_cred_line_and_agr(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        self.setGeometry(100, 100, 600, 500)
-        self.setWindowTitle('View mode')
+        self.setGeometry(0, 0, 600, 500)
+        self.setWindowTitle('Режим просмотра')
         self.layout.setAlignment(Qt.AlignCenter)
 
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
 
-        labels_name = ['Name', 'Type', 'Date', '', 'Agreement', 'Agr. date']
+        labels_name = ['Наименование', 'Тип', 'Дата', '', 'Договор', 'Дата договора']
         self.arrange_labels(self.layout, labels_name, 0, 1, 0)
 
         self.arrange_labels(self.layout, self.folder_org_entr, 2, 0, 1)
@@ -946,6 +944,10 @@ class ViewMode(QWidget):
 
         self.names.clicked.connect(self.fill_cred_agr_by_cred_line)
         self.agreems.clicked.connect(self.fill_docs_and_attributes)
+
+        self.butt = QPushButton(text='Выбор режима')
+        self.butt.clicked.connect(main)
+        self.layout.addWidget(self.butt, 0, 8)
 
         self.clear_qline()  # make qline for future selected attributes
 
@@ -986,7 +988,7 @@ class ViewMode(QWidget):
         cursor = conn.cursor()
 
 
-        if self.curr_type_cred_line[0] == 'Entrepreneur':
+        if self.curr_type_cred_line[0] == 'Предприниматель':
             cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
                            'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
         else:
@@ -1042,23 +1044,23 @@ class ViewMode(QWidget):
                     step += step_down
 
             def receive_list_with_len_attributes():  # (TO-DO) make flexible func
-                self.Adjudications = ('Plaintiff', 'Respondent', 'Third parties', 'Case number', 'Instance')
-                self.Application = ('Profile Date',)
-                self.ApprovalTran = ('meeting Date', 'participants of the meeting', 'Chairman of meeting', 'Secretary')
-                self.ConsentSpou = ('Date',)
-                self.ExtractUSRLE = ('date of issue', 'director', 'members of society')
-                self.ListParShare = ('list Date', 'Member №1', 'member share №1', 'Member №2', 'member share №2')
-                self.MainContract = ('The lender / guarantor', 'Borrower / Principal', 'beneficiary', 'contract number',
-                                     'Date of contract', 'The amount of the transaction', 'Contract fee Period',
-                                     'Signatory of the Creditor', 'Signatory of the Borrower')
+                self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
+                self.Application = ('Дата анкеты',)
+                self.ApprovalTran = ('Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
+                self.ConsentSpou = ('Дата согласия',)
+                self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
+                self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
+                self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
+                                     'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
+                                     'Подписант от Кредитора', 'Подписант от Заемщика')
                 self.OfficialCorr = (
-                'Sender', 'Destination', 'Outgoing №', 'Date Outgoing №', 'Incoming №', 'Date Incoming №')
-                self.Questionnaire = ('Profile Date',)
-                self.RussianPassp = ('Number',)
+                'Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
+                self.Questionnaire = ('Дата анкеты',)
+                self.RussianPassp = ('Серия и номер',)
 
                 self.len_attrib = []
 
-                if self.curr_type_cred_line[0] == 'Organization':
+                if self.curr_type_cred_line[0] == 'Организация':
                     self.len_attrib.append(len(self.Adjudications))  # Aou
                     self.len_attrib.append(len(self.Application))  # Aou
                     self.len_attrib.append(len(self.ApprovalTran))  # o
@@ -1096,44 +1098,46 @@ sys.excepthook = my_exception_hook
 
 
 def main():
+    def clear_gui():
+        for i in reversed(range(root.layout.count())):
+            root.layout.itemAt(i).widget().deleteLater()
+
     app = QApplication(sys.argv)
+    print('\tPROGRAM IN DEBUG MODE!')
+    print('\t\tADDING MODE - 95% (80% tested)\n\t\tVIEW MODE - 60% (40% tested)\n\t\tSEARCH MODE - 0% (0% tested)'
+          '\n\t\tUPDATE MODE - 0% (0% tested)\n')
 
-    v = ViewMode()
+    def start_adding_mode(parent):
+        clear_gui()
+        a = AddingMode(parent)
 
-    print('PROGRAM IN DEBUG MODE, FOR CHECK ADDING MODE, UNCOMMENT LINES BELOW')
+    def start_view_mode(parent):
+        clear_gui()
+        v = ViewMode(parent)
 
-    # v.hide()
-    # def start_adding_mode():
-    #     start_mode(mode='a')
-    # def start_view_mode():
-    #     start_mode(mode='v')
-    #
-    # def start_mode(mode):
-    #     if mode == 'a':
-    #         a = AddingMode()
-    #         a.show()
-    #     if mode == 'v':
-    #         v.show()
-    #
-    # root = QWidget()
-    # root.layout = QGridLayout()
-    # root.setLayout(root.layout)
-    # root.setGeometry(100, 100, 600, 500)
-    # root.setWindowTitle('cred.agr.prog.')
-    # root.label_start = QLabel('ADDING MODE - 90% (75% tested)\nVIEW MODE - 60%\nUPDATE AND SEARCHING MODE - pending')
-    # root.layout.addWidget(root.label_start, 0, 1)
-    #
-    # root.butt = QPushButton(text='start adding')
-    # root.butt.clicked.connect(start_adding_mode)
-    # root.layout.addWidget(root.butt, 1, 1)
-    #
-    # root.butt = QPushButton(text='start view')
-    # root.butt.clicked.connect(start_view_mode)
-    # root.layout.addWidget(root.butt, 2, 1)
-    #
-    # root.show()
+    root = QWidget()
+    root.layout = QGridLayout()
+    root.setLayout(root.layout)
+    root.setGeometry(100, 100, 600, 500)
 
-    sys.exit(app.exec_())
+    root.setWindowTitle('Хранение кредитных договоров')
+    root.label_start = QLabel('Выберите режим работы:')
+    root.layout.addWidget(root.label_start, 0, 1)
+
+    root.butt = QPushButton(text='Добавить кредитную линию')
+    root.butt.clicked.connect(lambda: start_adding_mode(root))
+    root.layout.addWidget(root.butt, 1, 1)
+
+    root.butt = QPushButton(text='Просмотреть кредитные линии')
+    root.butt.clicked.connect(lambda: start_view_mode(root))
+    root.layout.addWidget(root.butt, 2, 1)
+
+    root.show()
+
+    try:
+        sys.exit(app.exec_())
+    except:
+        print("Exiting")
 
 if __name__ == "__main__":
     main()
