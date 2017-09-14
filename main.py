@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import \
-    (QWidget, QPushButton, QApplication, QLabel, QComboBox, QLineEdit, QGridLayout, QMessageBox, QListWidget)
+    (QWidget, QPushButton, QApplication, QLabel, QComboBox, QLineEdit, QGridLayout,
+     QMessageBox, QListWidget, QDialog, QFrame)
 from PyQt5.QtCore import Qt
 import os
 import sqlite3
@@ -9,9 +10,10 @@ import re
 
 # add check " and \ and another 'stop windows os symbol'
 # add check (if NULL send in DB make some symbol)
-class AddingMode(QWidget):
+class AddingMode(QDialog):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QDialog.__init__(self, parent)
+
         self.create_db_and_tables()
         self.last_number_id_res = self.get_sendid_from_db(table_name='NameAgreement')
         self.agree_global = 'none_dirs'  # to know with which agreement we work
@@ -275,7 +277,7 @@ class AddingMode(QWidget):
     def pt1_start_adding(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 1/4.')
         self.layout.setAlignment(Qt.AlignCenter)
 
@@ -324,7 +326,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Добавьте следующий договор')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 1/4.')
 
         admode_pt1_labels = ['Договор', 'Дата договора']
@@ -396,7 +398,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 2/4.')
 
         self.len_folder = 0
@@ -425,7 +427,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Добавьте аттрибуты для документов')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 2/4.')
 
         if self.type_is == 'Организация':
@@ -512,7 +514,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Добавьте поручителя или залогодателя')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
         admode_pt3_labels = ['Название', 'Тип', 'Тип 2', 'Дата']
@@ -540,6 +542,7 @@ class AddingMode(QWidget):
                             self.last_number_id_res))
             conn.commit()
             conn.close()
+            self.type_is_2 = data_to_insert[2]
             self.pt4_put_files_gu_pl()
         self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
@@ -563,7 +566,7 @@ class AddingMode(QWidget):
                 os.makedirs(q)
                 os.chdir(q)
 
-                if self.type_is == 'Организация':  # and Pledgor (delete)
+                if self.type_is_2 == 'Организация':  # and Pledgor (delete)
                     folders = self.folders_gp_org
                 else:
                     folders = self.folders_gp_entr
@@ -579,11 +582,11 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
         self.len_folder = 0
-        if self.type_is == 'Организация':
+        if self.type_is_2 == 'Организация':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
             self.len_folder = len(self.folders_gp_org)
         else:
@@ -605,7 +608,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Добавьте аттрибуты для документов')
         self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
         if self.type_is == 'Организация':
@@ -693,7 +696,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Добавьте групповой объект')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
         self.arrange_labels(place=self.layout, list_with_names=['Название'], step_down=1)
@@ -738,7 +741,7 @@ class AddingMode(QWidget):
 
         self.label_start = QLabel('Расположите файлы в папках')
         self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
         self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
@@ -758,7 +761,7 @@ class AddingMode(QWidget):
 
             self.label_start = QLabel('Добавьте аттрибуты для документов')
             self.layout.addWidget(self.label_start, 0, 0)
-            self.setGeometry(0, 0, 600, 500)
+            self.setGeometry(100, 100, 600, 500)
             self.setWindowTitle('Режим добавления. Шаг 4/4.')
 
             self.arrange_labels(place=self.layout, list_with_names=self.folder_grp_obj, step_down=2)
@@ -826,8 +829,7 @@ class AddingMode(QWidget):
         if reply == QMessageBox.Yes:
             self.pt1_start_adding_again()
         else:
-            print('NO WORK, FIX IT!')
-            main()
+            self.close()
 
 
 class UpdatingMode(QWidget):
@@ -844,9 +846,9 @@ class SearchMode(QWidget):
     pass
 
 
-class ViewMode(QWidget):
+class ViewMode(QDialog, QFrame):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        QDialog.__init__(self, parent)
 
         self.folder_org_entr = ('Судебные решения', 'Заявка', 'Одобрение сделки', 'Согласие супруга',
                                 'Выписка ЕГРЮЛ', 'Список участников и реестр акционеров', 'Основной договор', 'Официальная переписка',
@@ -856,7 +858,15 @@ class ViewMode(QWidget):
                             'Список участников и реестр акционеров', 'Судебные решения')
         self.folders_entr = ('Анкета', 'Заявка', 'Основной договор', 'Официальная переписка',
                              'Паспорт РФ', 'Согласие супруга', 'Судебные решения')
-        self.view_cred_line_and_agr()
+        try:
+            self.view_cred_line_and_agr()
+        except sqlite3.OperationalError:
+            label_name = QLabel('База данных отсутствует или недоступна\nСвяжитесь с администратором')
+            self.layout.addWidget(label_name, 0, 0)
+
+            self.butt = QPushButton(text='Назад')
+            self.butt.clicked.connect(self.close)
+            self.layout.addWidget(self.butt, 1, 0)
 
     def fill_listbox(self, table_name, up_down, right_left):
         list = QListWidget(self)
@@ -912,7 +922,7 @@ class ViewMode(QWidget):
     def view_cred_line_and_agr(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
-        self.setGeometry(0, 0, 600, 500)
+        self.setGeometry(100, 100, 600, 500)
         self.setWindowTitle('Режим просмотра')
         self.layout.setAlignment(Qt.AlignCenter)
 
@@ -946,7 +956,7 @@ class ViewMode(QWidget):
         self.agreems.clicked.connect(self.fill_docs_and_attributes)
 
         self.butt = QPushButton(text='Выбор режима')
-        self.butt.clicked.connect(main)
+        self.butt.clicked.connect(self.close)
         self.layout.addWidget(self.butt, 0, 8)
 
         self.clear_qline()  # make qline for future selected attributes
@@ -955,6 +965,7 @@ class ViewMode(QWidget):
         conn.close()
 
     def fill_cred_agr_by_cred_line(self):
+        self.clear_qline()
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
 
@@ -986,7 +997,6 @@ class ViewMode(QWidget):
         self.position_in_lb_right = int(self.agreems.currentRow())
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
-
 
         if self.curr_type_cred_line[0] == 'Предприниматель':
             cursor.execute('SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
@@ -1087,9 +1097,7 @@ class ViewMode(QWidget):
             pass
         conn.close()
 
-
-# for catching pyqt c++ errors
-sys._excepthook = sys.excepthook
+sys._excepthook = sys.excepthook  # for catching pyqt c++ errors
 def my_exception_hook(exctype, value, traceback):
     print(exctype, value, traceback)
     sys._excepthook(exctype, value, traceback)
@@ -1098,22 +1106,18 @@ sys.excepthook = my_exception_hook
 
 
 def main():
-    def clear_gui():
-        for i in reversed(range(root.layout.count())):
-            root.layout.itemAt(i).widget().deleteLater()
+    def start_mode(parent, mode):
+        if mode == 'adding':
+            st = AddingMode(parent)
+        if mode == 'view':
+            st = ViewMode(parent)
+
+        root.hide()
+        go_to_home_screen = st.exec_()
+        if go_to_home_screen == 0:
+            root.show()
 
     app = QApplication(sys.argv)
-    print('\tPROGRAM IN DEBUG MODE!')
-    print('\t\tADDING MODE - 95% (80% tested)\n\t\tVIEW MODE - 60% (40% tested)\n\t\tSEARCH MODE - 0% (0% tested)'
-          '\n\t\tUPDATE MODE - 0% (0% tested)\n')
-
-    def start_adding_mode(parent):
-        clear_gui()
-        a = AddingMode(parent)
-
-    def start_view_mode(parent):
-        clear_gui()
-        v = ViewMode(parent)
 
     root = QWidget()
     root.layout = QGridLayout()
@@ -1125,19 +1129,20 @@ def main():
     root.layout.addWidget(root.label_start, 0, 1)
 
     root.butt = QPushButton(text='Добавить кредитную линию')
-    root.butt.clicked.connect(lambda: start_adding_mode(root))
+    root.butt.clicked.connect(lambda: start_mode(root, mode='adding'))
     root.layout.addWidget(root.butt, 1, 1)
 
     root.butt = QPushButton(text='Просмотреть кредитные линии')
-    root.butt.clicked.connect(lambda: start_view_mode(root))
+    root.butt.clicked.connect(lambda: start_mode(root, mode='view'))
     root.layout.addWidget(root.butt, 2, 1)
 
     root.show()
-
-    try:
-        sys.exit(app.exec_())
-    except:
-        print("Exiting")
+    sys.exit(app.exec_())
 
 if __name__ == "__main__":
+    print('\tPROGRAM IN DEBUG MODE!')
+    print('\t\tADDING MODE - 95% (80% tested)'
+          '\n\t\tVIEW MODE - 60% (40% tested)'
+          '\n\t\tSEARCH MODE - 0% (0% tested)'
+          '\n\t\tUPDATE MODE - 0% (0% tested)\n')
     main()
