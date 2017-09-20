@@ -9,11 +9,6 @@ import sys
 import re
 
 
-# add check " and \ and / and another 'stop windows os symbol' make folder
-#   and reverse result again when try found folder
-# add check (if NULL send in DB make some symbol)
-# add check FileExistsError
-# make drop connection to DB
 class AddingMode(QDialog):
     def __init__(self, parent=None):
         QDialog.__init__(self, parent)
@@ -78,6 +73,8 @@ class AddingMode(QDialog):
                            'Кадастровый (или условный) номер')
         self.ExtracUSRRE = ('Дата выписки', 'Адрес объекта', 'Кадастровый (или условный) номер')
         self.sum_grp_obj_ttr = (self.ExtracUSRRE + self.ContrSale + self.CertifOwner)
+
+        self.mode = 'test'
 
         self.pt1_start_adding()
 
@@ -162,7 +159,7 @@ class AddingMode(QDialog):
                 'CREATE TABLE DocumAgreem (id integer PRIMARY KEY, Adjudications text NULL, Application text NULL, '
                 'ApprovalTran text NULL, ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, '
                 'MainContract text NULL, OfficialCorr text NULL, Questionnaire text NULL, RussianPassp text NULL, '
-                'idSend integer NULL, NameAgreementID text NULL)')
+                'idSend integer NULL, NameAgreementID text NULL, AgreemNameID text NULL, NameOfAdditAgreem text NULL)')
             cursor.execute(
                 'CREATE TABLE PledGuar (id integer PRIMARY KEY, Name text NULL, Type text NULL, Type2 text NULL, '
                 'Date text NULL, idSend integer NULL, DocumAgreemID text NULL)')
@@ -279,6 +276,16 @@ class AddingMode(QDialog):
 
         return self.checking_files_done
 
+    def check_stop_symbol_win(self, data):
+        new_data = []
+        for i in data:
+            i = re.sub(r'\/|\\|:|\*|\?|\<|\>|\|', '_', i)  # / \ : * ? < > | on _
+            i = re.sub(r'\"', '', i)  # " on 'space' (delete)
+            if i == '':
+                i = 'НЕТ ИНФОРМАЦИИ'
+            new_data.append(i)
+        return new_data
+
     def pt1_start_adding(self):
         self.layout = QGridLayout()
         self.setLayout(self.layout)
@@ -306,29 +313,45 @@ class AddingMode(QDialog):
         self.pt1_data_saver = []
         def commit_info_to_db():  # run function by button with param.
             data_to_insert = self.collect_data_with_comboboxes()
+            data_to_insert = self.check_stop_symbol_win(data_to_insert)
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
-                           'VALUES (?, ?, ?, ?, ?, ?)',
-                           (data_to_insert[0], data_to_insert[1], data_to_insert[2],
-                            data_to_insert[3], data_to_insert[4], self.last_number_id_res))
-            conn.commit()
-            conn.close()
-            self.nametrans = data_to_insert[0]
-            self.agrtrans = data_to_insert[3]
-            self.pt1_data_saver.append(data_to_insert[0])
-            self.pt1_data_saver.append(data_to_insert[1])
-            self.pt1_data_saver.append(data_to_insert[2])
-            self.transfer_input_to_pt2 = self.collect_data_with_comboboxes()
-            self.pt2_put_files()
+
+            stop = 0
+            a = os.path.exists('CLIENTS')
+            if a is False:
+                os.mkdir('CLIENTS')
+            os.chdir('CLIENTS')
+            list_dir = os.listdir()
+            for dir in list_dir:
+                if dir == data_to_insert[0]:
+                    QMessageBox.warning(self, 'Предупреждение', 'Такое название уже существует')
+                    stop = 1
+
+            if stop == 0:
+                cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
+                               'VALUES (?, ?, ?, ?, ?, ?)',
+                               (data_to_insert[0], data_to_insert[1], data_to_insert[2],
+                                data_to_insert[3], data_to_insert[4], self.last_number_id_res))
+                conn.commit()
+                conn.close()
+                self.nametrans = data_to_insert[0]
+                self.agrtrans = data_to_insert[3]
+                self.pt1_data_saver.append(data_to_insert[0])
+                self.pt1_data_saver.append(data_to_insert[1])
+                self.pt1_data_saver.append(data_to_insert[2])
+                self.transfer_input_to_pt2 = data_to_insert
+                self.pt2_put_files()
+
         self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 6, 1)
 
         self.show()
 
-    def pt1_start_adding_again(self):
+    def pt1_start_adding_again(self, mod):
+        self.mode = mod
         self.clear_gui()
 
         self.label_start = QLabel('Добавьте следующий договор')
@@ -344,28 +367,31 @@ class AddingMode(QDialog):
         self.entry2 = QLineEdit()
         self.layout.addWidget(self.entry2, 2, 1)
 
+        self.small_trans = []
         def check_data():
-            self.data_ins_zero = self.entry.text()
-            self.data_ins_one = self.entry2.text()
-
-            if self.data_ins_zero == '':
+            if self.entry.text() == '':
                 QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте договор')
             else:
+                self.small_trans.append(self.entry.text())
+                self.small_trans.append(self.entry2.text())
+                self.mall_trans = self.check_stop_symbol_win(self.small_trans)
                 commit_info_to_db()
         def commit_info_to_db():
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
+
+
             cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
                            'VALUES (?, ?, ?, ?, ?, ?)',
                            (self.pt1_data_saver[0], self.pt1_data_saver[1], self.pt1_data_saver[2],
-                            self.data_ins_zero, self.data_ins_one, self.last_number_id_res))
+                            self.small_trans[0], self.small_trans[1], self.last_number_id_res))
             conn.commit()
             conn.close()
-            self.agrtrans = self.data_ins_zero
-            self.transfer_input_to_pt2.insert(3, self.data_ins_zero)
+            self.agrtrans = self.small_trans[0]
+            self.transfer_input_to_pt2.insert(3, self.small_trans[0])
             self.transfer_input_to_pt2.pop(4)
-            self.transfer_input_to_pt2.insert(4, self.data_ins_one)
+            self.transfer_input_to_pt2.insert(4, self.small_trans[1])
             self.transfer_input_to_pt2.pop(5)
             self.pt2_put_files()
         self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
@@ -375,31 +401,31 @@ class AddingMode(QDialog):
         self.show()
 
     def pt2_put_files(self):
-        data_to_insert = self.transfer_input_to_pt2
+        data_to_insert = self.check_stop_symbol_win(self.transfer_input_to_pt2)
 
-        def make_clients_folders():
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+        try:
+            def make_clients_folders():
+                os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+                os.chdir('CLIENTS')
 
-            a = os.path.exists('CLIENTS')
-            if a is False:
-                os.mkdir('CLIENTS')
-            os.chdir('CLIENTS')
+                q = data_to_insert[0] + '//' + data_to_insert[3]
+                self.agree_global = 'CLIENTS//' + q
+                os.makedirs(q)
+                os.chdir(q)
 
-            q = data_to_insert[0] + '//' + data_to_insert[3]
-            self.agree_global = 'CLIENTS//' + q
-            os.makedirs(q)
-            os.chdir(q)
+                if data_to_insert[1] == 'Юр.лицо':
+                    folders = self.folders_org
+                else:
+                    folders = self.folders_entr
+                z = 0
+                d = len(folders)
+                while z != d:
+                    folder = folders[z]
+                    os.mkdir(folder)
+                    z += 1
+        except FileExistsError:
+            QMessageBox.information(self, 'ERROR', 'ERROR IN DB, CHECK LAST COMMIT AND FILES')  # (TO-DO) error
 
-            if data_to_insert[1] == 'Юр.лицо':
-                folders = self.folders_org
-            else:
-                folders = self.folders_entr
-            z = 0
-            d = len(folders)
-            while z != d:
-                folder = folders[z]
-                os.mkdir(folder)
-                z += 1
         make_clients_folders()
 
         self.clear_gui()
@@ -424,7 +450,7 @@ class AddingMode(QDialog):
 
         def add_attribute_or_no():
             result = self.check_files_in_folder()
-            if result is True:  # DEBUG (right - True)
+            if result is False:  # DEBUG (right - True)
                 self.pt2_adding_attributes_for_files()
         self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
@@ -469,8 +495,9 @@ class AddingMode(QDialog):
         data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
                                                    attribute_len=attribute_len_list)
 
-        def commit_info_pt2_to_db():
+        def commit_info_pt2_to_db():  # CHECK THIS PART (debug)
             list_with_attributes = self.collect_data(data_from=data_from_attrib)
+            list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
 
             # prepare to insert data (separate by column)
             separate_list_with_attributes = []
@@ -494,10 +521,20 @@ class AddingMode(QDialog):
                 f = str(separate_list_with_attributes[5])
                 g = str(separate_list_with_attributes[6])
                 h = str(separate_list_with_attributes[7])
-                cursor.execute(
-                    'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
-                    'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans))
+
+                if self.mode == 'anotheragree':
+                    cursor.execute(
+                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID)'
+                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.agrtrans))
+                if self.mode == 'addagree':  # additional
+                    cursor.execute(
+                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
+                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.agrtrans, self.small_trans[0]))
+
             else:
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
@@ -506,13 +543,28 @@ class AddingMode(QDialog):
                 e = str(separate_list_with_attributes[4])
                 f = str(separate_list_with_attributes[5])
                 g = str(separate_list_with_attributes[6])
-                cursor.execute(
-                    'INSERT INTO DocumAgreem (Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, '
-                    'Questionnaire, RussianPassp, idSend, NameAgreementID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans))
+
+                if self.mode == 'anotheragree':
+                    cursor.execute(
+                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID)'
+                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.agrtrans))
+                if self.mode == 'addagree':  # additional
+                    cursor.execute(
+                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
+                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.agrtrans, self.small_trans[0]))
             conn.commit()
             conn.close()
-            self.pt3_adding_guar_pled()
+            # loop for add.egree
+            reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор?',
+                                         QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.pt1_start_adding_again(mod='addagree')
+            else:
+                self.pt3_adding_guar_pled()
         self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
         self.butt.clicked.connect(commit_info_pt2_to_db)
         self.layout.addWidget(self.butt, 17, 0)
@@ -542,7 +594,7 @@ class AddingMode(QDialog):
             else:
                 commit_info_to_db()  # (TO-DO) check for folders exists
         def commit_info_to_db():
-            data_to_insert = self.collect_data_with_comboboxes()
+            data_to_insert = self.check_stop_symbol_win(self.collect_data_with_comboboxes())
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
@@ -562,7 +614,7 @@ class AddingMode(QDialog):
         self.show()
 
     def pt4_put_files_gu_pl(self):
-        data_to_insert = self.collect_data_with_comboboxes()
+        data_to_insert = self.check_stop_symbol_win(self.collect_data_with_comboboxes())
         self.type_g_or_p = data_to_insert[1]
 
         def make_gu_pl_folders():
@@ -608,7 +660,7 @@ class AddingMode(QDialog):
 
         def add_attribute_or_no():
             result = self.check_files_in_folder()
-            if result is True:  # DEBUG (right - True)
+            if result is False:  # DEBUG (right - True)
                 self.pt4_adding_attributes_for_files_gp()
         self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
@@ -654,6 +706,7 @@ class AddingMode(QDialog):
 
         def commit_info_pt4_to_db():
             list_with_attributes = self.collect_data(data_from=data_from_attrib)
+            list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
 
             # prepare to insert data (separate by column)
             separate_list_with_attributes = []
@@ -716,12 +769,13 @@ class AddingMode(QDialog):
         combo = QLineEdit()
         self.layout.addWidget(combo, 1, 1)
 
-        self.data_to_insert = 'none'
+        self.data_small_trans = []
         def check_data():
-            self.data_to_insert = combo.text()
-            if self.data_to_insert == '':
+            if combo.text() == '':
                 QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте имя')
             else:
+                self.data_small_trans.append(combo.text())
+                self.data_small_trans = self.check_stop_symbol_win(self.data_small_trans)
                 self.pt5_optional_adding_groups_obj()
         self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
@@ -741,12 +795,12 @@ class AddingMode(QDialog):
         combo = QLineEdit()
         self.layout.addWidget(combo, 1, 1)
 
-        self.data_to_insert2 = 'none'
         def check_data():
-            self.data_to_insert2 = combo.text()
-            if self.data_to_insert2 == '':
+            if combo.text() == '':
                 QMessageBox.warning(self, 'Предупреждение', 'Пожалуйста добавьте имя')
             else:
+                self.data_small_trans.insert(1, combo.text())
+                self.data_small_trans = self.check_stop_symbol_win(self.data_small_trans)
                 self.pt5_optional_check_and_commit()
         self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
@@ -759,14 +813,14 @@ class AddingMode(QDialog):
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             os.chdir(str(self.gp_global))
 
-            b = os.path.exists('__' + self.data_to_insert)
+            b = os.path.exists('__' + self.data_small_trans[0])
 
             if b is False:
-                w = '__' + self.data_to_insert
+                w = '__' + self.data_small_trans[0]
                 os.makedirs(w)
                 os.chdir(w)
 
-                w = '__' + self.data_to_insert2
+                w = '__' + self.data_small_trans[1]
                 os.makedirs(w)
                 os.chdir(w)
                 folders = self.folder_grp_obj
@@ -777,8 +831,8 @@ class AddingMode(QDialog):
                     os.mkdir(folder)
                     z += 1
             else:
-                os.chdir('__' + self.data_to_insert)
-                q = '__' + self.data_to_insert2
+                os.chdir('__' + self.data_small_trans[0])
+                q = '__' + self.data_small_trans[1]
                 os.makedirs(q)
                 os.chdir(q)
 
@@ -805,7 +859,7 @@ class AddingMode(QDialog):
 
         def add_attribute_or_no():
             result = self.check_files_in_folder()
-            if result is True:  # DEBUG (right - True)
+            if result is False:  # DEBUG (right - True)
                 adding_attributes_for_grp_obj()
         self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
@@ -839,11 +893,12 @@ class AddingMode(QDialog):
 
         def commit_info_to_db():
             list_with_attributes = self.collect_data(data_from=self.data_from_attrib_grp_obj)
+            list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
 
             # prepare to insert data (separate by column)
             separate_list_with_attributes = []
-            separate_list_with_attributes.append(self.data_to_insert)
-            separate_list_with_attributes.append(self.data_to_insert2)
+            separate_list_with_attributes.append(self.data_small_trans[0])
+            separate_list_with_attributes.append(self.data_small_trans[1])
             start = 0
             stop = 0
             for item in self.attribute_len_list:
@@ -884,12 +939,12 @@ class AddingMode(QDialog):
     def loop_in_creed_agr(self):
         reply = QMessageBox.question(self, 'Вопрос', 'Добавить другой кредитный договор?', QMessageBox.Yes, QMessageBox.No)
         if reply == QMessageBox.Yes:
-            self.pt1_start_adding_again()
+            self.pt1_start_adding_again(mod='anotheragree')
         else:
             self.close()
 
 
-class UpdatingMode(QWidget):
+class UpdatingMode(QDialog):
     # use add+view class with add button
     # try mmap; or seek/read;
     # count = 0
@@ -900,11 +955,22 @@ class UpdatingMode(QWidget):
     pass
 
 
-class SearchMode(QWidget):
-    pass
+# reverse search input (stop win symbol)
+class SearchMode(QDialog):
+    def __init__(self, parent=None):
+        QWidget.__init__(self, parent)
+        self.start()
+
+    def start(self):
+        self.layout = QGridLayout()
+        self.setLayout(self.layout)
+        self.setGeometry(30, 30, 300, 600)
+        self.setWindowTitle('Режим поиска')
+        self.layout.setAlignment(Qt.AlignCenter)
+
+        self.show()
 
 
-# add link to open folder with docs
 class ViewMode(QDialog, QFrame):
     def __init__(self, parent=None):
         QWidget.__init__(self, parent)
@@ -1601,23 +1667,19 @@ def main():
             st = AddingMode()
         if mode == 'view':
             st = ViewMode()
-
-        root.setDisabled(True)
-        try:
-            go_to_home_screen = st.exec_()
-        except:
-            pass
-
+        if mode == 'search':
+            st = SearchMode()
         if mode == 'update':
             QMessageBox.information(root, 'Сообщение', 'Режим в разработке')
-            go_to_home_screen = 0
-        if mode == 'search':
-            QMessageBox.information(root, 'Сообщение', 'Режим в разработке')
-            go_to_home_screen = 0
 
+        root.setDisabled(True)
+        go_to_home_screen = st.exec_()
         if go_to_home_screen == 0:
             root.setDisabled(False)
             root.activateWindow()
+
+
+
 
     app = QApplication(sys.argv)
     ico = QIcon('icon.png')
@@ -1651,15 +1713,15 @@ def main():
     root.butt.clicked.connect(lambda: start_mode(root, mode='search'))
     root.layout.addWidget(root.butt, 4, 1)
 
-    # start_mode(root, mode='view')  # DEBUG (right - delete this row)
+    start_mode(root, mode='adding')  # DEBUG (right - delete this row)
 
     root.show()
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    # print('\tPROGRAM IN DEBUG MODE! (check files in folders is disabled, view mode in auto-start')
-    print('\t\tADDING MODE - 90% (85% tested)'
-          '\n\t\tVIEW MODE - 80% (60% tested)'
+    print('\tPROGRAM IN DEBUG MODE! (check files in folders is disabled, view mode in auto-start')
+    print('\t\tADDING MODE - 95% (95% tested)'
+          '\n\t\tVIEW MODE - 90% (80% tested)'
           '\n\t\tSEARCH MODE - 10% (0% tested)'
           '\n\t\tUPDATE MODE - 40% (0% tested)\n')
     main()
