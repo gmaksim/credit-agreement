@@ -15,7 +15,6 @@ class AddingMode(QDialog):
 
         self.create_db_and_tables()
         self.last_number_id_res = self.get_sendid_from_db(table_name='NameAgreement')
-        self.agree_global = 'none_dirs'  # to know with which agreement we work
         self.gp_global = 'none dirs'
 
         # Start block
@@ -24,6 +23,7 @@ class AddingMode(QDialog):
                             'Спис-к уч-в и реестр акционеров', 'Судебные решения')
         self.folders_entr = ('Анкета', 'Заявка', 'Основной договор', 'Официальная переписка',
                              'Паспорт РФ', 'Согласие супруга', 'Судебные решения')
+        self.folder_addit = ('Официальная переписка', 'Судебные решения')
         self.checking_files_done = None
 
         # GuPl block
@@ -53,6 +53,7 @@ class AddingMode(QDialog):
                              self.MainContract + self.OfficialCorr + self.ListParShare + self.Adjudications)
         self.sum_entr_attr = (self.Questionnaire + self.Application + self.MainContract + self.OfficialCorr +
                               self.RussianPassp + self.ConsentSpou + self.Adjudications)
+        self.sum_add_attrib = (self.OfficialCorr + self.Adjudications)
         self.len_attrib = []
 
 
@@ -74,7 +75,10 @@ class AddingMode(QDialog):
         self.ExtracUSRRE = ('Дата выписки', 'Адрес объекта', 'Кадастровый (или условный) номер')
         self.sum_grp_obj_ttr = (self.ExtracUSRRE + self.ContrSale + self.CertifOwner)
 
-        self.mode = 'test'
+        self.mode = 'anotheragree'
+        self.currLineAndAgreem = 'none'
+        self.currBaseAgreem = 'none'
+        self.add_aadit_attr_or_no = '0'
 
         self.pt1_start_adding()
 
@@ -154,7 +158,7 @@ class AddingMode(QDialog):
             cursor = conn.cursor()
             cursor.execute(  # (TO-DO) change to executescript
                 'CREATE TABLE NameAgreement (id integer PRIMARY KEY, Name text NULL, Type text NULL, Date text NULL, '
-                'Agreement text NULL, AgrDate text NULL, idSend integer NULL)')
+                'Agreement text NULL, AgrDate text NULL, BaseAgreemID text NULL, idSend integer NULL)')
             cursor.execute(
                 'CREATE TABLE DocumAgreem (id integer PRIMARY KEY, Adjudications text NULL, Application text NULL, '
                 'ApprovalTran text NULL, ConsentSpou text NULL, ExtractUSRLE text NULL, ListParShare text NULL, '
@@ -330,10 +334,12 @@ class AddingMode(QDialog):
                     stop = 1
 
             if stop == 0:
-                cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
-                               'VALUES (?, ?, ?, ?, ?, ?)',
+                self.forFirstTableSaveBaseAgreem = data_to_insert[3]
+                cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, BaseAgreemID, idSend) '
+                               'VALUES (?, ?, ?, ?, ?, ?, ?)',
                                (data_to_insert[0], data_to_insert[1], data_to_insert[2],
-                                data_to_insert[3], data_to_insert[4], self.last_number_id_res))
+                                data_to_insert[3], data_to_insert[4], self.forFirstTableSaveBaseAgreem,
+                                self.last_number_id_res))
                 conn.commit()
                 conn.close()
                 self.nametrans = data_to_insert[0]
@@ -377,15 +383,17 @@ class AddingMode(QDialog):
                 self.mall_trans = self.check_stop_symbol_win(self.small_trans)
                 commit_info_to_db()
         def commit_info_to_db():
+            if self.mode == 'anotheragree':
+                self.forFirstTableSaveBaseAgreem = self.small_trans[0]
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
 
-
-            cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, idSend) '
-                           'VALUES (?, ?, ?, ?, ?, ?)',
+            cursor.execute('INSERT INTO NameAgreement (Name, Type, Date, Agreement, AgrDate, BaseAgreemID, idSend) '
+                           'VALUES (?, ?, ?, ?, ?, ?, ?)',
                            (self.pt1_data_saver[0], self.pt1_data_saver[1], self.pt1_data_saver[2],
-                            self.small_trans[0], self.small_trans[1], self.last_number_id_res))
+                            self.small_trans[0], self.small_trans[1], self.forFirstTableSaveBaseAgreem,
+                            self.last_number_id_res))
             conn.commit()
             conn.close()
             self.agrtrans = self.small_trans[0]
@@ -408,10 +416,19 @@ class AddingMode(QDialog):
                 os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
                 os.chdir('CLIENTS')
 
-                q = data_to_insert[0] + '//' + data_to_insert[3]
-                self.agree_global = 'CLIENTS//' + q
-                os.makedirs(q)
-                os.chdir(q)
+                if self.mode == 'anotheragree':
+                    q = data_to_insert[0] + '//' + data_to_insert[3]
+                    os.makedirs(q)
+                    os.chdir(q)
+                    self.currBaseAgreem = data_to_insert[3]
+                    self.currLineAndAgreem = q
+
+
+                if self.mode == 'addagree':  # additional
+                    q = self.currLineAndAgreem + '//' + self.agrtrans
+                    os.makedirs(q)
+                    os.chdir(q)
+
 
                 if data_to_insert[1] == 'Юр.лицо':
                     folders = self.folders_org
@@ -423,38 +440,39 @@ class AddingMode(QDialog):
                     folder = folders[z]
                     os.mkdir(folder)
                     z += 1
+            make_clients_folders()
+
+            self.clear_gui()
+
+            self.label_start = QLabel('Расположите файлы в папках')
+            self.layout.addWidget(self.label_start, 0, 1)
+            self.setGeometry(30, 30, 600, 500)
+            self.setWindowTitle('Режим добавления. Шаг 2/4.')
+
+            self.len_folder = 0
+            self.type_is = 'None'
+            if data_to_insert[1] == 'Юр.лицо':
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
+                self.len_folder = len(self.folders_org)
+                self.type_is = 'Юр.лицо'
+            else:
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
+                self.len_folder = len(self.folders_entr)
+                self.type_is = 'Физ.лицо'
+
+            self.arrange_color_labels(place=self.layout, total=self.len_folder)
+
+            def add_attribute_or_no():
+                result = self.check_files_in_folder()
+                if result is False:  # DEBUG (right - True)
+                    self.pt2_adding_attributes_for_files()
+
+            self.butt = QPushButton(text='Проверить файлы в папках')
+            self.butt.clicked.connect(add_attribute_or_no)
+            self.layout.addWidget(self.butt, 17, 1)
         except FileExistsError:
-            QMessageBox.information(self, 'ERROR', 'ERROR IN DB, CHECK LAST COMMIT AND FILES')  # (TO-DO) error
-
-        make_clients_folders()
-
-        self.clear_gui()
-
-        self.label_start = QLabel('Расположите файлы в папках')
-        self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(30, 30, 600, 500)
-        self.setWindowTitle('Режим добавления. Шаг 2/4.')
-
-        self.len_folder = 0
-        self.type_is = 'None'
-        if data_to_insert[1] == 'Юр.лицо':
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
-            self.len_folder = len(self.folders_org)
-            self.type_is = 'Юр.лицо'
-        else:
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
-            self.len_folder = len(self.folders_entr)
-            self.type_is = 'Физ.лицо'
-
-        self.arrange_color_labels(place=self.layout, total=self.len_folder)
-
-        def add_attribute_or_no():
-            result = self.check_files_in_folder()
-            if result is False:  # DEBUG (right - True)
-                self.pt2_adding_attributes_for_files()
-        self.butt = QPushButton(text='Проверить файлы в папках')
-        self.butt.clicked.connect(add_attribute_or_no)
-        self.layout.addWidget(self.butt, 17, 1)
+            QMessageBox.warning(self, 'Ошибка', 'Такое название кредитного договора\nв рамках кредитной линии существует'
+                                                '')  # (TO-DO) error
 
     def pt2_adding_attributes_for_files(self):
         self.clear_gui()
@@ -464,38 +482,51 @@ class AddingMode(QDialog):
         self.setGeometry(30, 30, 1100, 500)
         self.setWindowTitle('Режим добавления. Шаг 2/4.')
 
-        if self.type_is == 'Юр.лицо':
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
-            words = self.sum_org_attr
-        else:
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
-            words = self.sum_entr_attr
+        if self.add_aadit_attr_or_no == '1':
+            self.arrange_labels(place=self.layout, list_with_names=self.folder_addit, step_down=2)
+            words = self.sum_add_attrib
 
-        def receive_list_with_len_attributes():  # (TO-DO) make flexible func
             self.len_attrib = []
-            if self.type_is == 'Юр.лицо':
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
-                self.len_attrib.append(len(self.Application))  # o
-                self.len_attrib.append(len(self.ApprovalTran))  # o
-                self.len_attrib.append(len(self.MainContract))  # o
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.ListParShare))  # Aou
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-            else:
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.Application))  # Aou
-                self.len_attrib.append(len(self.MainContract))  # U
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.RussianPassp))  # Aou
-                self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                self.len_attrib.append(len(self.Adjudications))  # U
-            return self.len_attrib
-        attribute_len_list = receive_list_with_len_attributes()
-        data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
-                                                   attribute_len=attribute_len_list)
+            self.len_attrib.append(len(self.Adjudications))
+            self.len_attrib.append(len(self.OfficialCorr))
+            attribute_len_list = self.len_attrib
 
-        def commit_info_pt2_to_db():  # CHECK THIS PART (debug)
+            data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
+                                                       attribute_len=attribute_len_list)
+        else:
+            if self.type_is == 'Юр.лицо':
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_org, step_down=2)
+                words = self.sum_org_attr
+            else:
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_entr, step_down=2)
+                words = self.sum_entr_attr
+
+            def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+                self.len_attrib = []
+                if self.type_is == 'Юр.лицо':
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
+                    self.len_attrib.append(len(self.Application))  # o
+                    self.len_attrib.append(len(self.ApprovalTran))  # o
+                    self.len_attrib.append(len(self.MainContract))  # o
+                    self.len_attrib.append(len(self.OfficialCorr))  # Aou    ###
+                    self.len_attrib.append(len(self.ListParShare))  # Aou
+                    self.len_attrib.append(len(self.Adjudications))  # Aou  ###
+                else:
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.Application))  # Aou
+                    self.len_attrib.append(len(self.MainContract))  # U
+                    self.len_attrib.append(len(self.OfficialCorr))  # Aou   ###
+                    self.len_attrib.append(len(self.RussianPassp))  # Aou
+                    self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                    self.len_attrib.append(len(self.Adjudications))  # U   ###
+                return self.len_attrib
+
+            attribute_len_list = receive_list_with_len_attributes()
+            data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
+                                                       attribute_len=attribute_len_list)
+
+        def commit_info_pt2_to_db():
             list_with_attributes = self.collect_data(data_from=data_from_attrib)
             list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
 
@@ -512,59 +543,90 @@ class AddingMode(QDialog):
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
-            if self.type_is == 'Юр.лицо':  # (TO-DO) do it shorter
+            if self.add_aadit_attr_or_no == '1':
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
-                c = str(separate_list_with_attributes[2])
-                d = str(separate_list_with_attributes[3])
-                e = str(separate_list_with_attributes[4])
-                f = str(separate_list_with_attributes[5])
-                g = str(separate_list_with_attributes[6])
-                h = str(separate_list_with_attributes[7])
-
-                if self.mode == 'anotheragree':
-                    cursor.execute(
-                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
-                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID)'
-                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.agrtrans))
-                if self.mode == 'addagree':  # additional
-                    cursor.execute(
-                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
-                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
-                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.agrtrans, self.small_trans[0]))
-
+                cursor.execute(
+                    'INSERT INTO DocumAgreem (OfficialCorr, Adjudications, idSend, NameAgreementID, AgreemNameID)'
+                    ' VALUES (?, ?, ?, ?, ?)',
+                    (a, b, self.last_number_id_res, self.nametrans, self.currBaseAgreem))
             else:
-                a = str(separate_list_with_attributes[0])
-                b = str(separate_list_with_attributes[1])
-                c = str(separate_list_with_attributes[2])
-                d = str(separate_list_with_attributes[3])
-                e = str(separate_list_with_attributes[4])
-                f = str(separate_list_with_attributes[5])
-                g = str(separate_list_with_attributes[6])
+                if self.type_is == 'Юр.лицо':  # (TO-DO) do it shorter
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    e = str(separate_list_with_attributes[4])
+                    f = str(separate_list_with_attributes[5])
+                    g = str(separate_list_with_attributes[6])
+                    h = str(separate_list_with_attributes[7])
 
-                if self.mode == 'anotheragree':
-                    cursor.execute(
-                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
-                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID)'
-                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.agrtrans))
-                if self.mode == 'addagree':  # additional
-                    cursor.execute(
-                        'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
-                        'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
-                        ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.agrtrans, self.small_trans[0]))
+                    if self.mode == 'anotheragree':
+                        cursor.execute(
+                            'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                            'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID)'
+                            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.currBaseAgreem))
+                    if self.mode == 'addagree':  # additional
+                        cursor.execute(
+                            'INSERT INTO DocumAgreem (Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, '
+                            'MainContract, OfficialCorr, Questionnaire, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
+                            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            (a, b, c, d, e, f, g, h, self.last_number_id_res, self.nametrans, self.currBaseAgreem,
+                             self.small_trans[0]))
+
+                else:
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    e = str(separate_list_with_attributes[4])
+                    f = str(separate_list_with_attributes[5])
+                    g = str(separate_list_with_attributes[6])
+                    if self.mode == 'anotheragree':
+                        cursor.execute(
+                            'INSERT INTO DocumAgreem (Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, '
+                            'Questionnaire, RussianPassp, idSend, NameAgreementID, AgreemNameID)'
+                            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.currBaseAgreem))
+                    if self.mode == 'addagree':  # additional
+                        cursor.execute(
+                            'INSERT INTO DocumAgreem (Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, '
+                            'Questionnaire, RussianPassp, idSend, NameAgreementID, AgreemNameID, NameOfAdditAgreem)'
+                            ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                            (a, b, c, d, e, f, g, self.last_number_id_res, self.nametrans, self.currBaseAgreem,
+                             self.small_trans[0]))
+
             conn.commit()
             conn.close()
             # loop for add.egree
-            reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор?',
-                                         QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self.pt1_start_adding_again(mod='addagree')
+
+            if self.mode == 'anotheragree':
+                reply0 = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительные аттрибуты?\n'
+                                                              '(оф.переписка и судебн.решения)',
+                                              QMessageBox.Yes, QMessageBox.No)
+                if reply0 == QMessageBox.Yes:
+                    self.add_aadit_attr_or_no = '1'
+                    self.pt2_adding_attributes_for_files()
+                else:
+                    reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
+                                                                 'данному кредитному договору?',
+                                                 QMessageBox.Yes, QMessageBox.No)
+                    if reply == QMessageBox.Yes:
+                        self.add_aadit_attr_or_no = '0'
+                        self.pt1_start_adding_again(mod='addagree')
+                    else:
+                        self.pt3_adding_guar_pled()
             else:
-                self.pt3_adding_guar_pled()
+                reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
+                                                             'данному кредитному договору?',
+                                             QMessageBox.Yes, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.add_aadit_attr_or_no = '0'
+                    self.pt1_start_adding_again(mod='addagree')
+                else:
+                    self.pt3_adding_guar_pled()
+
         self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
         self.butt.clicked.connect(commit_info_pt2_to_db)
         self.layout.addWidget(self.butt, 17, 0)
@@ -601,7 +663,7 @@ class AddingMode(QDialog):
             cursor.execute('INSERT INTO PledGuar (Name, Type, Type2, Date, idSend, DocumAgreemID) '
                            'VALUES (?, ?, ?, ?, ?, ?)',
                            (data_to_insert[0], data_to_insert[1], data_to_insert[2], data_to_insert[3],
-                            self.last_number_id_res, self.agrtrans))
+                            self.last_number_id_res, self.forFirstTableSaveBaseAgreem))
             conn.commit()
             conn.close()
             self.plgutrans = data_to_insert[0]
@@ -619,13 +681,13 @@ class AddingMode(QDialog):
 
         def make_gu_pl_folders():
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
-            os.chdir(str(self.agree_global))
+            os.chdir(str('CLIENTS//' + self.currLineAndAgreem))
 
             b = os.path.exists(data_to_insert[0])
             if b is False:
                 q = '_' + data_to_insert[0]
 
-                self.gp_global = self.agree_global + '//' + q
+                self.gp_global = self.currLineAndAgreem + '//' + q
                 os.makedirs(q)
                 os.chdir(q)
 
@@ -676,7 +738,7 @@ class AddingMode(QDialog):
         self.setGeometry(30, 30, 1100, 500)
         self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
-        if self.type_is == 'Юр.лицо':
+        if self.type_is_2 == 'Юр.лицо':
             self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
             words = self.sum_gp_org_attr
         else:
@@ -685,7 +747,7 @@ class AddingMode(QDialog):
 
         def receive_list_with_len_attributes_pg():
             self.len_attrib = []
-            if self.type_is == 'Юр.лицо':
+            if self.type_is_2 == 'Юр.лицо':
                 self.len_attrib.append(len(self.Questionnaire))  # Aou
                 self.len_attrib.append(len(self.ExtractUSRLE))  # o
                 self.len_attrib.append(len(self.SuretAgrPledg))  # o
@@ -722,7 +784,7 @@ class AddingMode(QDialog):
             conn = sqlite3.connect('DATA//firstBase.sqlite')
             cursor = conn.cursor()
 
-            if self.type_is == 'Юр.лицо':  # (TO-DO) do it shorter
+            if self.type_is_2 == 'Юр.лицо':  # (TO-DO) do it shorter
                 a = str(separate_list_with_attributes[0])
                 b = str(separate_list_with_attributes[1])
                 c = str(separate_list_with_attributes[2])
@@ -742,17 +804,24 @@ class AddingMode(QDialog):
                 e = str(separate_list_with_attributes[4])
                 f = str(separate_list_with_attributes[5])
                 cursor.execute(
-                    'INSERT INTO DocumGuPl (Adjudications, ConsentSpou, OfficialCorr, Questionnaire, RussianPassp, '
+                    'INSERT INTO DocumGuPl (Adjudications, ConsentSpou, OfficialCorr, RussianPassp, Questionnaire, '
                     'SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                     (a, b, c, d, e, f, self.last_number_id_res, self.plgutrans))
 
             conn.commit()
             conn.close()
 
-            if self.type_g_or_p == 'Залогодатель':
-                self.pt5_optional_adding_global_name()
+            reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
+                                                         'данному залогодателю/поручителю?',
+                                         QMessageBox.Yes, QMessageBox.No)
+            if reply == QMessageBox.Yes:
+                self.pt4_put_files_gu_pl()
             else:
-                self.loop_in_guaran_pled()
+                if self.type_g_or_p == 'Залогодатель':
+                    self.pt5_optional_adding_global_name()
+                else:
+                    self.loop_in_guaran_pled()
+
         self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
         self.butt.clicked.connect(commit_info_pt4_to_db)
         self.layout.addWidget(self.butt, 17, 0)
@@ -811,7 +880,7 @@ class AddingMode(QDialog):
     def pt5_optional_check_and_commit(self):
         def make_grp_obj_folders():
             os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
-            os.chdir(str(self.gp_global))
+            os.chdir(str('CLIENTS//' + self.gp_global))
 
             b = os.path.exists('__' + self.data_small_trans[0])
 
@@ -993,6 +1062,8 @@ class ViewMode(QDialog, QFrame):
 
         self.folder_grp_obj = ('Выписка ЕГРН', 'Договор купли-продажи', 'Свидетельство о праве собственности')
 
+        self.curr_pos_of_plgua = 'none'
+
         try:
             self.view_cred_line_and_agr()
         except sqlite3.OperationalError:
@@ -1086,7 +1157,15 @@ class ViewMode(QDialog, QFrame):
         header2 = ['Договор', 'Дата договора']
         self.agrd.setHorizontalHeaderLabels(header2)
         self.agrd.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.layout.addWidget(self.agrd, 1, 5, 1, 4)
+        self.layout.addWidget(self.agrd, 1, 5, 1, 2)
+
+        self.addAgrd = QTableWidget()
+        self.addAgrd.setColumnCount(1)
+        self.addAgrd.setRowCount(1)
+        header2 = ['Доп. договор',]
+        self.addAgrd.setHorizontalHeaderLabels(header2)
+        self.addAgrd.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.layout.addWidget(self.addAgrd, 1, 7, 1, 2)
 
         self.plgua = QTableWidget()
         self.plgua.setColumnCount(4)
@@ -1123,6 +1202,9 @@ class ViewMode(QDialog, QFrame):
         self.label_info = QLabel('Договор')
         self.layout.addWidget(self.label_info, 0, 5)
         self.label_info.setStyleSheet("QWidget {color: #000000; font: bold 15px;}")
+        self.label_info = QLabel('Доп. договор')
+        self.layout.addWidget(self.label_info, 0, 7)
+        self.label_info.setStyleSheet("QWidget {color: #000000; font: bold 15px;}")
         self.label_info = QLabel('Залогодатели / поручители')
         self.layout.addWidget(self.label_info, 3, 5)
         self.label_info.setStyleSheet("QWidget {color: #000000; font: bold 15px;}")
@@ -1133,17 +1215,21 @@ class ViewMode(QDialog, QFrame):
         self.layout.addWidget(self.label_info, 8, 5)
         self.label_info.setStyleSheet("QWidget {color: #000000; font: bold 15px;}")
 
-        self.butt = QPushButton(text='Документы')
-        self.butt.clicked.connect(self.attrib_agree)
-        self.layout.addWidget(self.butt, 0, 8)  # договора
-
-        self.butt = QPushButton(text='Документы')
-        self.butt.clicked.connect(self.attrib_agree_gupl)
-        self.layout.addWidget(self.butt, 3, 8)  # залогодателя / поручителя
-
-        self.butt = QPushButton(text='Документы')
-        self.butt.clicked.connect(self.attrib_agree_obj)
-        self.layout.addWidget(self.butt, 8, 8)  # объекта в группе
+        # self.butt = QPushButton(text='Документы')
+        # self.butt.clicked.connect(self.attrib_agree)
+        # self.layout.addWidget(self.butt, 0, 6)  # договора
+        #
+        # self.butt = QPushButton(text='Документы')
+        # self.butt.clicked.connect(self.attrib_add_agree)
+        # self.layout.addWidget(self.butt, 0, 8)  # доп.договора
+        #
+        # self.butt = QPushButton(text='Документы')
+        # self.butt.clicked.connect(self.attrib_agree_gupl)
+        # self.layout.addWidget(self.butt, 3, 6)  # залогодателя / поручителя
+        #
+        # self.butt = QPushButton(text='Документы')
+        # self.butt.clicked.connect(self.attrib_agree_obj)
+        # self.layout.addWidget(self.butt, 8, 6)  # объекта в группе
 
         self.show()
         conn.close()
@@ -1159,13 +1245,18 @@ class ViewMode(QDialog, QFrame):
         header2 = ['Объект в группе',]
         self.oneobj.setHorizontalHeaderLabels(header2)
 
+        self.addAgrd.clear()
+        header2 = ['Доп. договор',]
+        self.addAgrd.setHorizontalHeaderLabels(header2)
+
+
         conn = sqlite3.connect('DATA//firstBase.sqlite')
         cursor = conn.cursor()
 
         self.position_in_lb = self.names.currentRow()  # take position in cred.line lb
         self.position_in_lb = str(self.position_in_lb + 1)
 
-        cursor.execute('SELECT Agreement, AgrDate FROM NameAgreement WHERE idSend = (?)',
+        cursor.execute('SELECT Agreement, AgrDate FROM NameAgreement WHERE idSend = (?) AND Agreement = BaseAgreemID',
                        (self.position_in_lb,))
         agrdate = cursor.fetchall()
         self.agrd.setRowCount(len(agrdate))
@@ -1184,136 +1275,268 @@ class ViewMode(QDialog, QFrame):
                        (self.position_in_lb,))  # '()' and ',' - it's important!
         curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
         self.curr_type_cred_line = curr_type_cred_line[0]
+        print(self.curr_type_cred_line)
 
         conn.close()
 
-    def attrib_agree(self):
-        conn = sqlite3.connect('DATA//firstBase.sqlite')
-        cursor = conn.cursor()
-
-        try:
-            if self.curr_type_cred_line[0] == 'Физ.лицо':
-                cursor.execute(
-                    'SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
-                    'RussianPassp FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
-            else:
-                cursor.execute(
-                    'SELECT Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, MainContract, '
-                    'OfficialCorr, Questionnaire FROM DocumAgreem WHERE idSend = (?)', (self.position_in_lb,))
-
-            name = cursor.fetchall()
-
-            self.position_in_lb_right = self.pos
-            self.att_lay = QWidget()
-            self.att_lay.layout = QGridLayout()
-            self.att_lay.setLayout(self.att_lay.layout)
-            self.att_lay.setWindowTitle('Просмотр атрибутов договора')
-            self.att_lay.setGeometry(30, 80, 1000, 300)
-            self.att_lay.layout.setAlignment(Qt.AlignCenter)
-
-            try:
-                def arrange_info(place, step_down, list_with_words, attribute_len):
-                    self.data_from_attrib = []
-
-                    clear_words = []
-                    w = 0
-                    try:
-                        while w != len(list_with_words):
-                            text = name[self.position_in_lb_right][w]
-                            qw = text.split(r', ')
-                            for i in qw:
-                                i = re.sub(r'\'', '', i)
-                                i = re.sub(r'\[', '', i)
-                                i = re.sub(r'\]', '', i)
-                                clear_words.append(i)
-                            w += 1
-                    except AttributeError:
-                        pass
-
-                    list_with_words = clear_words
-                    word = 0
-                    step = 2
-
-                    for i in attribute_len:  # i = quantity of needed labels
-                        start = 0
-                        offset = 2
-                        while start != i:
-                            entry = QLineEdit(list_with_words[word])
-                            entry.setReadOnly(True)
-                            if len(attribute_len) == 7:  # make skips for attributes
-                                if step == 4:
-                                    step += 1
-                                if step == 6:
-                                    step += 2
-                            else:
-                                if step == 5:
-                                    step += 1
-                            place.addWidget(entry, step, offset)
-                            self.data_from_attrib.append(entry)
-                            start += 1
-                            offset += 1
-                            word += 1
-                        step += step_down
-
-                def receive_list_with_len_attributes():  # (TO-DO) make flexible func
-                    self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
-                    self.Application = ('Дата анкеты',)
-                    self.ApprovalTran = (
-                        'Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
-                    self.ConsentSpou = ('Дата согласия',)
-                    self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
-                    self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
-                    self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
-                                         'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
-                                         'Подписант от Кредитора', 'Подписант от Заемщика')
-                    self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
-                    self.Questionnaire = ('Дата анкеты',)
-                    self.RussianPassp = ('Серия и номер',)
-
-                    self.len_attrib = []
-
-                    if self.curr_type_cred_line[0] == 'Юр.лицо':
-                        self.len_attrib.append(len(self.Questionnaire))  # Aou
-                        self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
-                        self.len_attrib.append(len(self.Application))  # o
-                        self.len_attrib.append(len(self.ApprovalTran))  # o
-                        self.len_attrib.append(len(self.MainContract))  # o
-                        self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                        self.len_attrib.append(len(self.ListParShare))  # Aou
-                        self.len_attrib.append(len(self.Adjudications))  # Aou
-                        labels_name = self.folders_org
-                    else:
-                        self.len_attrib.append(len(self.Questionnaire))  # Aou
-                        self.len_attrib.append(len(self.Application))  # Aou
-                        self.len_attrib.append(len(self.MainContract))  # U
-                        self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                        self.len_attrib.append(len(self.RussianPassp))  # Aou
-                        self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                        self.len_attrib.append(len(self.Adjudications))  # U
-                        labels_name = self.folders_entr
-                    self.arrange_labels(self.att_lay.layout, labels_name, 1, 0, 2)
-                    return self.len_attrib
-
-                attribute_len_list = receive_list_with_len_attributes()
-                arrange_info(place=self.att_lay.layout, step_down=2,
-                             list_with_words=name[self.position_in_lb_right],
-                             attribute_len=attribute_len_list)
-                self.att_lay.show()
-            except IndexError:
-                QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')  # make this in another attr func too
-
-
-
-        except AttributeError:
-            QMessageBox.information(self, 'Сообщение', 'Вы не выбрали договор')
-        except TypeError:
-            QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужный договор')
-
-        self.pos = 'zero'
-        conn.close()
+    # def attrib_agree(self):
+    #     conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #     cursor = conn.cursor()
+    #
+    #     try:
+    #         if self.curr_type_cred_line == 'Физ.лицо':
+    #             cursor.execute(
+    #                 'SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
+    #                 'RussianPassp FROM DocumAgreem WHERE idSend = (?) AND AgreemNameID = (?) AND NameOfAdditAgreem is NULL',
+    #                 (self.position_in_lb, self.transagrd[self.pos_in_agrd]))
+    #         else:
+    #             cursor.execute(
+    #                 'SELECT Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, MainContract, '
+    #                 'OfficialCorr, Questionnaire FROM DocumAgreem WHERE idSend = (?) AND AgreemNameID = (?) AND NameOfAdditAgreem is NULL',
+    #                 (self.position_in_lb, self.transagrd[self.pos_in_agrd]))
+    #
+    #         try:
+    #             name = cursor.fetchall()
+    #
+    #             self.att_lay = QWidget()
+    #             self.att_lay.layout = QGridLayout()
+    #             self.att_lay.setLayout(self.att_lay.layout)
+    #             self.att_lay.setWindowTitle('Просмотр атрибутов договора')
+    #             self.att_lay.setGeometry(30, 80, 1000, 300)
+    #             self.att_lay.layout.setAlignment(Qt.AlignCenter)
+    #
+    #             def arrange_info(place, step_down, list_with_words, attribute_len):
+    #                 self.data_from_attrib = []
+    #
+    #                 clear_words = []
+    #                 w = 0
+    #
+    #                 while w != len(list_with_words):
+    #                     text = name[0][w]
+    #                     print(text)  # DEBUG
+    #
+    #                     if text == None:
+    #                         w += 1
+    #                     else:
+    #                         qw = text.split(r', ')
+    #                         for i in qw:
+    #                             i = re.sub(r'\'', '', i)
+    #                             i = re.sub(r'\[', '', i)
+    #                             i = re.sub(r'\]', '', i)
+    #                             clear_words.append(i)
+    #                         w += 1
+    #
+    #                 list_with_words = clear_words
+    #                 word = 0
+    #                 step = 2
+    #
+    #                 for i in attribute_len:  # i = quantity of needed labels
+    #                     start = 0
+    #                     offset = 2
+    #                     while start != i:
+    #                         entry = QLineEdit(list_with_words[word])
+    #                         entry.setReadOnly(True)
+    #                         if len(attribute_len) == 7:  # make skips for attributes
+    #                             if step == 4:
+    #                                 step += 1
+    #                             if step == 6:
+    #                                 step += 2
+    #                         else:
+    #                             if step == 5:
+    #                                 step += 1
+    #                         place.addWidget(entry, step, offset)
+    #                         self.data_from_attrib.append(entry)
+    #                         start += 1
+    #                         offset += 1
+    #                         word += 1
+    #                     step += step_down
+    #
+    #             def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+    #                 self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
+    #                 self.Application = ('Дата анкеты',)
+    #                 self.ApprovalTran = (
+    #                     'Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
+    #                 self.ConsentSpou = ('Дата согласия',)
+    #                 self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
+    #                 self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
+    #                 self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
+    #                                      'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
+    #                                      'Подписант от Кредитора', 'Подписант от Заемщика')
+    #                 self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
+    #                 self.Questionnaire = ('Дата анкеты',)
+    #                 self.RussianPassp = ('Серия и номер',)
+    #
+    #                 self.len_attrib = []
+    #
+    #                 if self.curr_type_cred_line == 'Юр.лицо':
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
+    #                     self.len_attrib.append(len(self.Application))  # o
+    #                     self.len_attrib.append(len(self.ApprovalTran))  # o
+    #                     self.len_attrib.append(len(self.MainContract))  # o
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
+    #                     self.len_attrib.append(len(self.ListParShare))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # Aou
+    #                     labels_name = self.folders_org
+    #                 else:
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.Application))  # Aou
+    #                     self.len_attrib.append(len(self.MainContract))  # U
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
+    #                     self.len_attrib.append(len(self.RussianPassp))  # Aou
+    #                     self.len_attrib.append(len(self.ConsentSpou))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # U
+    #                     labels_name = self.folders_entr
+    #                 self.arrange_labels(self.att_lay.layout, labels_name, 1, 0, 2)
+    #                 return self.len_attrib
+    #
+    #             attribute_len_list = receive_list_with_len_attributes()
+    #             arrange_info(place=self.att_lay.layout, step_down=2,
+    #                          list_with_words=name[0],
+    #                          attribute_len=attribute_len_list)
+    #             self.att_lay.show()
+    #
+    #         except TypeError: #IndexError
+    #             QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')  # make this in another attr func too
+    #
+    #     # except AttributeError:
+    #     #     QMessageBox.information(self, 'Сообщение', 'Вы не выбрали договор')
+    #     except TypeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужный договор')
+    #
+    #     self.pos_in_agrd = 'zero'  # disable documents button if no selected
+    #     conn.close()
+    #
+    # def attrib_add_agree(self):
+    #     # small bug - button work if you don't select something (remember last pos)
+    #     conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #     cursor = conn.cursor()
+    #
+    #     self.agree_pos = self.addAgrd.currentRow()
+    #
+    #     try:
+    #         if self.curr_type_cred_line == 'Физ.лицо':
+    #             cursor.execute(
+    #                 'SELECT Adjudications, Application, ConsentSpou, MainContract, OfficialCorr, Questionnaire, '
+    #                 'RussianPassp FROM DocumAgreem WHERE idSend and NameOfAdditAgreem = (?)',
+    #                 (self.position_in_lb, self.transaddagree[self.agree_pos]))
+    #         else:
+    #             cursor.execute(
+    #                 'SELECT Adjudications, Application, ApprovalTran, ExtractUSRLE, ListParShare, MainContract, '
+    #                 'OfficialCorr, Questionnaire FROM DocumAgreem WHERE idSend = (?) and NameOfAdditAgreem = (?)',
+    #                 (self.position_in_lb, self.transaddagree[self.agree_pos]))
+    #
+    #         name = cursor.fetchall()
+    #
+    #         self.att_lay = QWidget()
+    #         self.att_lay.layout = QGridLayout()
+    #         self.att_lay.setLayout(self.att_lay.layout)
+    #         self.att_lay.setWindowTitle('Просмотр атрибутов договора')
+    #         self.att_lay.setGeometry(30, 80, 1000, 300)
+    #         self.att_lay.layout.setAlignment(Qt.AlignCenter)
+    #
+    #         try:
+    #             def arrange_info(place, step_down, list_with_words, attribute_len):
+    #                 self.data_from_attrib = []
+    #
+    #                 clear_words = []
+    #                 w = 0
+    #                 try:
+    #                     while w != len(list_with_words):
+    #                         text = name[0][w]
+    #                         qw = text.split(r', ')
+    #                         for i in qw:
+    #                             i = re.sub(r'\'', '', i)
+    #                             i = re.sub(r'\[', '', i)
+    #                             i = re.sub(r'\]', '', i)
+    #                             clear_words.append(i)
+    #                         w += 1
+    #                 except AttributeError:
+    #                     pass
+    #
+    #                 list_with_words = clear_words
+    #                 word = 0
+    #                 step = 2
+    #
+    #                 for i in attribute_len:  # i = quantity of needed labels
+    #                     start = 0
+    #                     offset = 2
+    #                     while start != i:
+    #                         entry = QLineEdit(list_with_words[word])
+    #                         entry.setReadOnly(True)
+    #                         if len(attribute_len) == 7:  # make skips for attributes
+    #                             if step == 4:
+    #                                 step += 1
+    #                             if step == 6:
+    #                                 step += 2
+    #                         else:
+    #                             if step == 5:
+    #                                 step += 1
+    #                         place.addWidget(entry, step, offset)
+    #                         self.data_from_attrib.append(entry)
+    #                         start += 1
+    #                         offset += 1
+    #                         word += 1
+    #                     step += step_down
+    #
+    #             def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+    #                 self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
+    #                 self.Application = ('Дата анкеты',)
+    #                 self.ApprovalTran = (
+    #                     'Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
+    #                 self.ConsentSpou = ('Дата согласия',)
+    #                 self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
+    #                 self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
+    #                 self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
+    #                                      'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
+    #                                      'Подписант от Кредитора', 'Подписант от Заемщика')
+    #                 self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
+    #                 self.Questionnaire = ('Дата анкеты',)
+    #                 self.RussianPassp = ('Серия и номер',)
+    #
+    #                 self.len_attrib = []
+    #
+    #                 if self.curr_type_cred_line == 'Юр.лицо':
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
+    #                     self.len_attrib.append(len(self.Application))  # o
+    #                     self.len_attrib.append(len(self.ApprovalTran))  # o
+    #                     self.len_attrib.append(len(self.MainContract))  # o
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
+    #                     self.len_attrib.append(len(self.ListParShare))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # Aou
+    #                     labels_name = self.folders_org
+    #                 else:
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.Application))  # Aou
+    #                     self.len_attrib.append(len(self.MainContract))  # U
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # Aou
+    #                     self.len_attrib.append(len(self.RussianPassp))  # Aou
+    #                     self.len_attrib.append(len(self.ConsentSpou))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # U
+    #                     labels_name = self.folders_entr
+    #                 self.arrange_labels(self.att_lay.layout, labels_name, 1, 0, 2)
+    #                 return self.len_attrib
+    #
+    #             attribute_len_list = receive_list_with_len_attributes()
+    #             arrange_info(place=self.att_lay.layout, step_down=2,
+    #                          list_with_words=name[0],
+    #                          attribute_len=attribute_len_list)
+    #             self.att_lay.show()
+    #         except IndexError:
+    #             QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')  # make this in another attr func too
+    #
+    #     except AttributeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Вы не выбрали договор')
+    #     except TypeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужный договор')
+    #
+    #     conn.close()
 
     def view_g_pl(self):
-        self.pos = int(self.agrd.currentRow())  # get correct access to attributes (if no selected - error)
+        self.pos_in_agrd = self.agrd.currentRow()  # get correct access to attributes (if no selected - error)
+        self.pos = int(self.agrd.currentRow())  # get correct access to attributes (if no selected - error) DELETE?
+
         self.grpobj.clear()
         header2 = ['Группа',]
         self.grpobj.setHorizontalHeaderLabels(header2)
@@ -1331,165 +1554,185 @@ class ViewMode(QDialog, QFrame):
         self.docagrname = self.agrd.currentRow()  # for know names of agreem
 
         try:
-            cursor.execute('SELECT Name, Type, Type2, Date, DocumAgreemID FROM PledGuar WHERE idSend = (?) AND DocumAgreemID = (?)',
-                       (self.position_in_lb2, self.transagrd[self.docagrname]))
+            cursor.execute('SELECT Name, Type, Type2, Date, DocumAgreemID FROM PledGuar WHERE idSend = (?) '
+                           'AND DocumAgreemID = (?)', (self.position_in_lb2, self.transagrd[self.docagrname]))
         except AttributeError:
             pass
         gupldata = cursor.fetchall()
+
         self.plgua.setRowCount(len(gupldata))
 
         i = 0
         self.transgupl = []  # for know names of gu/pl
+        self.gupl_type = []
         for item in gupldata:
             self.plgua.setItem(i, 0, QTableWidgetItem(item[0]))
             self.plgua.setItem(i, 1, QTableWidgetItem(item[1]))
             self.plgua.setItem(i, 2, QTableWidgetItem(item[2]))
             self.plgua.setItem(i, 3, QTableWidgetItem(item[3]))
             self.transgupl.append(item[0])
+            self.gupl_type.append(item[2])
             i += 1
 
-        # cursor.execute('SELECT Type FROM NameAgreement WHERE idSend = (?)',
-        #                (self.position_in_lb,))  # '()' and ',' - it's important!
-        # curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
-        # self.curr_type_cred_line = curr_type_cred_line[0]
+        # add addit agree
+        self.position_in_lb23 = self.names.currentRow()  # take position in cred.line lb
+        self.position_in_lb23 = str(self.position_in_lb23 + 1)
 
-        conn.close()
-
-    def attrib_agree_gupl(self):
-        conn = sqlite3.connect('DATA//firstBase.sqlite')
-        cursor = conn.cursor()
+        self.docagrname2 = self.agrd.currentRow()  # for know names of agreem
 
         try:
-            if self.curr_type_cred_line[0] == 'Физ.лицо':
-                cursor.execute(
-                    'SELECT Adjudications, ConsentSpou, OfficialCorr, Questionnaire, RussianPassp, SuretAgrPledg '
-                    'FROM DocumGuPl WHERE idSend = (?)', (self.position_in_lb,))
-            else:
-                cursor.execute(
-                    'SELECT Adjudications, ApprovalTran, ConsentSpou, ExtractUSRLE, OfficialCorr, Questionnaire, '
-                    'SuretAgrPledg FROM DocumGuPl WHERE idSend = (?)', (self.position_in_lb,))
-
-            name = cursor.fetchall()
-            check_for_none = name[0]
-
-            if check_for_none[0] is None:
-                QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')
-            else:
-                self.position_in_lb_right = self.pos2
-                self.att_lay = QWidget()
-                self.att_lay.layout = QGridLayout()
-                self.att_lay.setLayout(self.att_lay.layout)
-                self.att_lay.setWindowTitle('Просмотр атрибутов залогодателя / поручителя')
-                self.att_lay.setGeometry(30, 80, 1000, 300)
-                self.att_lay.layout.setAlignment(Qt.AlignCenter)
-
-                try:
-                    def arrange_info(place, step_down, list_with_words, attribute_len):
-                        self.data_from_attrib = []
-
-                        clear_words = []
-                        w = 0
-                        try:
-                            while w != len(list_with_words):
-                                text = name[self.position_in_lb_right][w]
-                                qw = text.split(r', ')
-                                for i in qw:
-                                    i = re.sub(r'\'', '', i)
-                                    i = re.sub(r'\[', '', i)
-                                    i = re.sub(r'\]', '', i)
-                                    clear_words.append(i)
-                                w += 1
-                        except AttributeError:
-                            pass
-
-                        list_with_words = clear_words
-                        word = 0
-                        step = 3
-
-                        for i in attribute_len:  # i = quantity of needed labels
-                            start = 0
-                            offset = 2
-                            while start != i:
-                                entry = QLineEdit(list_with_words[word])
-                                entry.setReadOnly(True)
-                                if len(attribute_len) == 7:  # make skips for attributes
-                                    if step == 4:
-                                        step += 1
-                                    if step == 6:
-                                        step += 2
-                                else:
-                                    if step == 5:
-                                        step += 1
-                                place.addWidget(entry, step, offset)
-                                self.data_from_attrib.append(entry)
-                                start += 1
-                                offset += 1
-                                word += 1
-                            step += step_down
-
-                    def receive_list_with_len_attributes():  # (TO-DO) make flexible func
-                        self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
-                        self.Application = ('Дата анкеты',)
-                        self.ApprovalTran = ('Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
-                        self.ConsentSpou = ('Дата согласия',)
-                        self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
-                        self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
-                        self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
-                                             'Дата дог-ра', 'Сумма сделки', 'Срок сделки',
-                                             'Подписант от Кредитора', 'Подписант от Заемщика')
-                        self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
-                        self.Questionnaire = ('Дата анкеты',)
-                        self.RussianPassp = ('Серия и номер',)
-                        self.ConsEncumb = ('Дата согласия', 'Адрес объекта', 'Кадастровый (или условный) номер',
-                                           'Тип обременения', 'Срок согласия')
-                        self.SuretAgrPledg = ('Дата договора', 'Кредитор / Гарант', 'Поручитель / Залогодатель',
-                                              'Срок обеспечения', 'Рег.номер записи об ипотеке')
-
-                        self.len_attrib = []
-
-                        if self.curr_type_cred_line[0] == 'Юр.лицо':
-                            self.len_attrib.append(len(self.Questionnaire))  # Aou
-                            self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
-                            self.len_attrib.append(len(self.SuretAgrPledg))  # o
-                            self.len_attrib.append(len(self.ApprovalTran))  # o
-                            self.len_attrib.append(len(self.OfficialCorr))  # o
-                            self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                            self.len_attrib.append(len(self.Adjudications))  # Aou
-                            labels_name2 = self.folders_gp_org
-                        else:
-                            self.len_attrib.append(len(self.Questionnaire))  # Aou
-                            self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
-                            self.len_attrib.append(len(self.OfficialCorr))  # U
-                            self.len_attrib.append(len(self.RussianPassp))  # Aou
-                            self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                            self.len_attrib.append(len(self.Adjudications))  # Aou
-                            labels_name2 = self.folders_gp_entr
-                        self.arrange_labels(self.att_lay.layout, labels_name2, 2, 0, 2)
-                        return self.len_attrib
-
-                    attribute_len_list = receive_list_with_len_attributes()
-                    arrange_info(place=self.att_lay.layout, step_down=2, list_with_words=name[self.position_in_lb_right],
-                                 attribute_len=attribute_len_list)
-
-                    self.att_lay.show()
-                except IndexError:
-                    # self.clear_qline()  # FIX BUG (incorrect attributes when < or > (???) 1 agr.)
-                    # UPD: TEST, bug doesn't exists
-                    pass
+            cursor.execute('SELECT Agreement, BaseAgreemID, idSend FROM NameAgreement WHERE idSend = (?) AND BaseAgreemID = (?) '
+                           'AND BaseAgreemID <> Agreement',
+                       (self.position_in_lb23, self.transagrd[self.docagrname2]))
         except AttributeError:
-            QMessageBox.information(self, 'Сообщение', 'Вы не выбрали залогодателя / поручителя')
-        except TypeError:
-            QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужного залогодателя / поручителя')
+            pass
+        addagr = cursor.fetchall()
+        self.addAgrd.setRowCount(len(addagr))
 
-        self.pos2 = 'zero'
+        i = 0
+        self.transaddagree = []
+        for item in addagr:
+            self.addAgrd.setItem(i, 0, QTableWidgetItem(item[0]))
+            self.transaddagree.append(item[0])
+            i += 1
+
         conn.close()
 
+    # def attrib_agree_gupl(self):
+    #     conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #     cursor = conn.cursor()
+    #
+    #     try:
+    #         if self.gupl_type[self.curr_pos_of_plgua] == 'Физ.лицо':
+    #             cursor.execute(
+    #                 'SELECT Adjudications, ConsentSpou, OfficialCorr, Questionnaire, RussianPassp, SuretAgrPledg '
+    #                 'FROM DocumGuPl WHERE idSend = (?) AND PledGuarID = (?)',
+    #                 (self.position_in_lb, self.transgupl[self.curr_pos_of_plgua]))
+    #         else:
+    #             cursor.execute(
+    #                 'SELECT Adjudications, ApprovalTran, ConsentSpou, ExtractUSRLE, OfficialCorr, Questionnaire, '
+    #                 'SuretAgrPledg FROM DocumGuPl WHERE idSend = (?) AND PledGuarID = (?)',
+    #                 (self.position_in_lb, self.transgupl[self.curr_pos_of_plgua]))
+    #
+    #         name = cursor.fetchall()
+    #         check_for_none = name[0]
+    #
+    #         if check_for_none[0] is None:
+    #             QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')
+    #         else:
+    #             self.position_in_lb_right = 0
+    #             self.att_lay = QWidget()
+    #             self.att_lay.layout = QGridLayout()
+    #             self.att_lay.setLayout(self.att_lay.layout)
+    #             self.att_lay.setWindowTitle('Просмотр атрибутов залогодателя / поручителя')
+    #             self.att_lay.setGeometry(30, 80, 1000, 300)
+    #             self.att_lay.layout.setAlignment(Qt.AlignCenter)
+    #
+    #             def arrange_info(place, step_down, list_with_words, attribute_len):
+    #                 self.data_from_attrib = []
+    #
+    #                 clear_words = []
+    #                 w = 0
+    #
+    #                 while w != len(list_with_words):
+    #                     text = name[self.position_in_lb_right][w]
+    #
+    #                     if text == None:
+    #                         w += 1
+    #                     else:
+    #                         qw = text.split(r', ')
+    #                         for i in qw:
+    #                             i = re.sub(r'\'', '', i)
+    #                             i = re.sub(r'\[', '', i)
+    #                             i = re.sub(r'\]', '', i)
+    #                             clear_words.append(i)
+    #                         w += 1
+    #
+    #                 list_with_words = clear_words
+    #                 word = 0
+    #                 step = 3
+    #
+    #
+    #                 for i in attribute_len:  # i = quantity of needed labels
+    #                     start = 0
+    #                     offset = 2
+    #                     while start != i:
+    #                         entry = QLineEdit(list_with_words[word])
+    #                         entry.setReadOnly(True)
+    #                         if len(attribute_len) == 7:  # make skips for attributes
+    #                             if step == 4:
+    #                                 step += 1
+    #                             if step == 6:
+    #                                 step += 2
+    #                         else:
+    #                             if step == 5:
+    #                                 step += 1
+    #                         place.addWidget(entry, step, offset)
+    #                         self.data_from_attrib.append(entry)
+    #                         start += 1
+    #                         offset += 1
+    #                         word += 1
+    #                     step += step_down
+    #
+    #             def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+    #                 self.Adjudications = ('Истец', 'Ответчик', 'Третьи лица', 'Номер дела', 'Инстанция')
+    #                 #self.Application = ('Дата анкеты',)
+    #                 self.ApprovalTran = ('Дата собрания', 'Участники собрания', 'Председатель собрания', 'Секретарь')
+    #                 self.ConsentSpou = ('Дата согласия',)
+    #                 self.ExtractUSRLE = ('Дата выписки', 'Директор', 'Участники общества')
+    #                 #self.ListParShare = ('Дата списка', 'Участник №1', 'Доля уч.№1', 'Участник №2', 'Доля уч.№2')
+    #                 #self.MainContract = ('Кредитор / Гарант', 'Заемщик / Принципал', 'Бенефициар', '№ договора',
+    #                 # 'Дата дог-ра', 'Сумма сделки', 'Срок сделки', 'Подписант от Кредитора', 'Подписант от Заемщика')
+    #                 self.OfficialCorr = ('Отправитель', 'Адресат', 'Исх.№', 'Дата исх.№', 'Вх.№', 'Дата вх.№')
+    #                 self.Questionnaire = ('Дата анкеты',)
+    #                 self.RussianPassp = ('Серия и номер',)
+    #                 #self.ConsEncumb = ('Дата согласия', 'Адрес объекта', 'Кадастровый (или условный) номер',
+    #                 # 'Тип обременения', 'Срок согласия')
+    #                 self.SuretAgrPledg = ('Дата договора', 'Кредитор / Гарант', 'Поручитель / Залогодатель',
+    #                                       'Срок обеспечения', 'Рег.номер записи об ипотеке')
+    #
+    #                 self.len_attrib = []
+    #
+    #                 if self.gupl_type[self.curr_pos_of_plgua] == 'Юр.лицо':
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.ExtractUSRLE))  # Aou
+    #                     self.len_attrib.append(len(self.SuretAgrPledg))  # o
+    #                     self.len_attrib.append(len(self.ApprovalTran))  # o
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # o
+    #                     self.len_attrib.append(len(self.ConsentSpou))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # Aou
+    #                     labels_name2 = self.folders_gp_org
+    #                 else:
+    #                     self.len_attrib.append(len(self.Questionnaire))  # Aou
+    #                     self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
+    #                     self.len_attrib.append(len(self.OfficialCorr))  # U
+    #                     self.len_attrib.append(len(self.RussianPassp))  # Aou
+    #                     self.len_attrib.append(len(self.ConsentSpou))  # Aou
+    #                     self.len_attrib.append(len(self.Adjudications))  # Aou
+    #                     labels_name2 = self.folders_gp_entr
+    #                 self.arrange_labels(self.att_lay.layout, labels_name2, 2, 0, 2)
+    #                 return self.len_attrib
+    #
+    #             attribute_len_list = receive_list_with_len_attributes()
+    #             arrange_info(place=self.att_lay.layout, step_down=2, list_with_words=name[self.position_in_lb_right],
+    #                          attribute_len=attribute_len_list)
+    #             self.att_lay.show()
+    #
+    #     except AttributeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Вы не выбрали залогодателя / поручителя')
+    #     except TypeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужного залогодателя / поручителя')
+    #     except IndexError:
+    #         QMessageBox.information(self, 'Сообщение', 'Вы не выбрали залогодателя / поручителя')
+    #
+    #     conn.close()
+
     def view_grp_obj(self):
-        self.pos2 = int(self.plgua.currentRow())
+        self.curr_pos_of_plgua = int(self.plgua.currentRow())
+
         self.oneobj.clear()
         header2 = ['Объект в группе',]
         self.oneobj.setHorizontalHeaderLabels(header2)
-
 
         # make correct clearing (!)
         conn = sqlite3.connect('DATA//firstBase.sqlite')
@@ -1514,11 +1757,6 @@ class ViewMode(QDialog, QFrame):
             self.grpobj.setItem(i, 0, QTableWidgetItem(item[0]))
             self.transglobnam.append(item[0])
             i += 1
-
-        # cursor.execute('SELECT Type FROM NameAgreement WHERE idSend = (?)',
-        #                (self.position_in_lb,))  # '()' and ',' - it's important!
-        # curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
-        # self.curr_type_cred_line = curr_type_cred_line[0]
 
         conn.close()
 
@@ -1551,105 +1789,105 @@ class ViewMode(QDialog, QFrame):
 
         conn.close()
 
-    def attrib_agree_obj(self):
-        conn = sqlite3.connect('DATA//firstBase.sqlite')
-        cursor = conn.cursor()
-        self.pos3 = int(self.oneobj.currentRow())
-
-        try:
-            cursor.execute('SELECT CertifOwner, ContrSale, ExtracUSRRE FROM GroupObj WHERE idSend = (?)', (self.position_in_lb,))
-            name = cursor.fetchall()
-            check_for_none = name[0]
-
-            if check_for_none[0] is None:
-                QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')
-            if self.pos3 == -1:
-                QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
-            else:
-                self.position_in_lb_right = self.pos3
-                self.att_lay = QWidget()
-                self.att_lay.layout = QGridLayout()
-                self.att_lay.setLayout(self.att_lay.layout)
-                self.att_lay.setWindowTitle('Просмотр атрибутов объекта')
-                self.att_lay.setGeometry(30, 80, 1000, 300)
-                self.att_lay.layout.setAlignment(Qt.AlignCenter)
-
-                try:
-                    def arrange_info(place, step_down, list_with_words, attribute_len):
-                        self.data_from_attrib = []
-
-                        clear_words = []
-                        w = 0
-                        try:
-                            while w != len(list_with_words):
-                                text = name[self.position_in_lb_right][w]
-                                qw = text.split(r', ')
-                                for i in qw:
-                                    i = re.sub(r'\'', '', i)
-                                    i = re.sub(r'\[', '', i)
-                                    i = re.sub(r'\]', '', i)
-                                    clear_words.append(i)
-                                w += 1
-                        except AttributeError:
-                            pass
-
-                        list_with_words = clear_words
-                        word = 0
-                        step = 2
-
-                        for i in attribute_len:  # i = quantity of needed labels
-                            start = 0
-                            offset = 2
-                            while start != i:
-                                entry = QLineEdit(list_with_words[word])
-                                entry.setReadOnly(True)
-                                if len(attribute_len) == 7:  # make skips for attributes
-                                    if step == 4:
-                                        step += 1
-                                    if step == 6:
-                                        step += 2
-                                else:
-                                    if step == 5:
-                                        step += 1
-                                place.addWidget(entry, step, offset)
-                                self.data_from_attrib.append(entry)
-                                start += 1
-                                offset += 1
-                                word += 1
-                            step += step_down
-
-                    def receive_list_with_len_attributes():  # (TO-DO) make flexible func
-                        self.CertifOwner = ('Дата свидетельства', 'Адрес объекта', 'Кадастровый (или условный) номер')
-                        self.ContrSale = ('Продавец', 'Покупатель', 'Дата договора', 'Адрес объекта',
-                                          'Кадастровый (или условный) номер')
-                        self.ExtracUSRRE = ('Дата выписки', 'Адрес объекта', 'Кадастровый (или условный) номер')
-
-                        self.len_attrib = []
-
-                        self.len_attrib.append(len(self.CertifOwner))  # Aou
-                        self.len_attrib.append(len(self.ContrSale))  # Aou
-                        self.len_attrib.append(len(self.ExtracUSRRE))  # o
-                        self.arrange_labels(self.att_lay.layout, self.folder_grp_obj, 1, 0, 2)
-                        return self.len_attrib
-
-                    attribute_len_list = receive_list_with_len_attributes()
-                    arrange_info(place=self.att_lay.layout, step_down=2, list_with_words=name[self.position_in_lb_right],
-                                 attribute_len=attribute_len_list)
-
-                    self.att_lay.show()
-                except IndexError:
-                    # self.clear_qline()  # FIX BUG (incorrect attributes when < or > (???) 1 agr.)
-                    # UPD: TEST, bug doesn't exists
-                    pass
-        except AttributeError:
-            QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
-        except TypeError:
-            QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужный объект')
-        except IndexError:
-            QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
-
-        self.pos3 = 'zero'  # small bug - button work if you don't select something (remember last pos)
-        conn.close()
+    # def attrib_agree_obj(self):
+    #     conn = sqlite3.connect('DATA//firstBase.sqlite')
+    #     cursor = conn.cursor()
+    #     self.pos3 = int(self.oneobj.currentRow())
+    #
+    #     try:
+    #         cursor.execute('SELECT CertifOwner, ContrSale, ExtracUSRRE FROM GroupObj WHERE idSend = (?)', (self.position_in_lb,))
+    #         name = cursor.fetchall()
+    #         check_for_none = name[0]
+    #
+    #         if check_for_none[0] is None:
+    #             QMessageBox.warning(self, 'Ошибка', 'Атрибуты отсуствуют!')
+    #         if self.pos3 == -1:
+    #             QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
+    #         else:
+    #             self.position_in_lb_right = self.pos3
+    #             self.att_lay = QWidget()
+    #             self.att_lay.layout = QGridLayout()
+    #             self.att_lay.setLayout(self.att_lay.layout)
+    #             self.att_lay.setWindowTitle('Просмотр атрибутов объекта')
+    #             self.att_lay.setGeometry(30, 80, 1000, 300)
+    #             self.att_lay.layout.setAlignment(Qt.AlignCenter)
+    #
+    #             try:
+    #                 def arrange_info(place, step_down, list_with_words, attribute_len):
+    #                     self.data_from_attrib = []
+    #
+    #                     clear_words = []
+    #                     w = 0
+    #                     try:
+    #                         while w != len(list_with_words):
+    #                             text = name[self.position_in_lb_right][w]
+    #                             qw = text.split(r', ')
+    #                             for i in qw:
+    #                                 i = re.sub(r'\'', '', i)
+    #                                 i = re.sub(r'\[', '', i)
+    #                                 i = re.sub(r'\]', '', i)
+    #                                 clear_words.append(i)
+    #                             w += 1
+    #                     except AttributeError:
+    #                         pass
+    #
+    #                     list_with_words = clear_words
+    #                     word = 0
+    #                     step = 2
+    #
+    #                     for i in attribute_len:  # i = quantity of needed labels
+    #                         start = 0
+    #                         offset = 2
+    #                         while start != i:
+    #                             entry = QLineEdit(list_with_words[word])
+    #                             entry.setReadOnly(True)
+    #                             if len(attribute_len) == 7:  # make skips for attributes
+    #                                 if step == 4:
+    #                                     step += 1
+    #                                 if step == 6:
+    #                                     step += 2
+    #                             else:
+    #                                 if step == 5:
+    #                                     step += 1
+    #                             place.addWidget(entry, step, offset)
+    #                             self.data_from_attrib.append(entry)
+    #                             start += 1
+    #                             offset += 1
+    #                             word += 1
+    #                         step += step_down
+    #
+    #                 def receive_list_with_len_attributes():  # (TO-DO) make flexible func
+    #                     self.CertifOwner = ('Дата свидетельства', 'Адрес объекта', 'Кадастровый (или условный) номер')
+    #                     self.ContrSale = ('Продавец', 'Покупатель', 'Дата договора', 'Адрес объекта',
+    #                                       'Кадастровый (или условный) номер')
+    #                     self.ExtracUSRRE = ('Дата выписки', 'Адрес объекта', 'Кадастровый (или условный) номер')
+    #
+    #                     self.len_attrib = []
+    #
+    #                     self.len_attrib.append(len(self.CertifOwner))  # Aou
+    #                     self.len_attrib.append(len(self.ContrSale))  # Aou
+    #                     self.len_attrib.append(len(self.ExtracUSRRE))  # o
+    #                     self.arrange_labels(self.att_lay.layout, self.folder_grp_obj, 1, 0, 2)
+    #                     return self.len_attrib
+    #
+    #                 attribute_len_list = receive_list_with_len_attributes()
+    #                 arrange_info(place=self.att_lay.layout, step_down=2, list_with_words=name[self.position_in_lb_right],
+    #                              attribute_len=attribute_len_list)
+    #
+    #                 self.att_lay.show()
+    #             except IndexError:
+    #                 # self.clear_qline()  # FIX BUG (incorrect attributes when < or > (???) 1 agr.)
+    #                 # UPD: TEST, bug doesn't exists
+    #                 pass
+    #     except AttributeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
+    #     except TypeError:
+    #         QMessageBox.information(self, 'Сообщение', 'Сначала нажмите на нужный объект')
+    #     except IndexError:
+    #         QMessageBox.information(self, 'Сообщение', 'Вы не выбрали объект')
+    #
+    #     self.pos3 = 'zero'  # small bug - button work if you don't select something (remember last pos)
+    #     conn.close()
 
 
 sys._excepthook = sys.excepthook  # for catching pyqt c++ errors
@@ -1677,9 +1915,6 @@ def main():
         if go_to_home_screen == 0:
             root.setDisabled(False)
             root.activateWindow()
-
-
-
 
     app = QApplication(sys.argv)
     ico = QIcon('icon.png')
@@ -1713,7 +1948,7 @@ def main():
     root.butt.clicked.connect(lambda: start_mode(root, mode='search'))
     root.layout.addWidget(root.butt, 4, 1)
 
-    start_mode(root, mode='adding')  # DEBUG (right - delete this row)
+    start_mode(root, mode='view')  # DEBUG (right - delete this row)
 
     root.show()
     sys.exit(app.exec_())
