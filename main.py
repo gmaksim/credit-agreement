@@ -80,6 +80,14 @@ class AddingMode(QDialog):
         self.currBaseAgreem = 'none'
         self.add_aadit_attr_or_no = '0'
 
+        self.folders_gp_org_cut = ('Анкета', 'Выписка ЕГРЮЛ', 'Дог-р пор-ва или залога',
+                                   'Одобрение сделки', 'Согласия на обременения',)
+        self.folders_gp_entr_cut = ('Анкета', 'Дог-р пор-ва или залога', 'Паспорт РФ', 'Согласия на обременения')
+
+        self.sum_gp_org_attr_cut = (self.Questionnaire + self.ExtractUSRLE + self.SuretAgrPledg + self.ApprovalTran
+                                + self.ConsentSpou)
+        self.sum_gp_entr_attr_cut = (self.Questionnaire + self.SuretAgrPledg + self.RussianPassp + self.ConsentSpou)
+
         self.pt1_start_adding()
 
     def arrange_labels(self, place, list_with_names, step_down):
@@ -464,7 +472,7 @@ class AddingMode(QDialog):
 
             def add_attribute_or_no():
                 result = self.check_files_in_folder()
-                if result is False:  # DEBUG (right - True)
+                if result is True:  # DEBUG (right - True)
                     self.pt2_adding_attributes_for_files()
 
             self.butt = QPushButton(text='Проверить файлы в папках')
@@ -668,163 +676,329 @@ class AddingMode(QDialog):
             conn.close()
             self.plgutrans = data_to_insert[0]
             self.type_is_2 = data_to_insert[2]
-            self.pt4_put_files_gu_pl()
+            self.pt4_put_files_gu_pl(mode='first')
         self.butt = QPushButton(text='Сохранить и перейти к следующему шагу')
         self.butt.clicked.connect(check_data)
         self.layout.addWidget(self.butt, 5, 1)
         self.setGeometry(30, 30, 600, 500)
         self.show()
 
-    def pt4_put_files_gu_pl(self):
-        data_to_insert = self.check_stop_symbol_win(self.collect_data_with_comboboxes())
-        self.type_g_or_p = data_to_insert[1]
+    def pt4_put_files_gu_pl(self, mode):
+        if mode == 'first':
+            data_to_insert = self.check_stop_symbol_win(self.collect_data_with_comboboxes())
+            self.type_g_or_p = data_to_insert[1]
 
-        def make_gu_pl_folders():
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
-            os.chdir(str('CLIENTS//' + self.currLineAndAgreem))
+            def make_gu_pl_folders():
+                os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+                os.chdir(str('CLIENTS//' + self.currLineAndAgreem))
 
-            b = os.path.exists(data_to_insert[0])
-            if b is False:
-                q = '_' + data_to_insert[0]
+                b = os.path.exists(data_to_insert[0])
+                if b is False:
+                    q = '_' + data_to_insert[0]
 
-                self.gp_global = self.currLineAndAgreem + '//' + q
-                os.makedirs(q)
-                os.chdir(q)
+                    self.gp_global = self.currLineAndAgreem + '//' + q
+                    os.makedirs(q)
+                    os.chdir(q)
 
-                if self.type_is_2 == 'Юр.лицо':  # and Pledgor (delete)
-                    folders = self.folders_gp_org
-                else:
-                    folders = self.folders_gp_entr
-                z = 0
-                d = len(folders)
-                while z != d:
-                    folder = folders[z]
-                    os.mkdir(folder)
-                    z += 1
-        make_gu_pl_folders()
+                    if self.type_is_2 == 'Юр.лицо':  # and Pledgor (delete)
+                        folders = self.folders_gp_org
+                    else:
+                        folders = self.folders_gp_entr
+                    z = 0
+                    d = len(folders)
+                    while z != d:
+                        folder = folders[z]
+                        os.mkdir(folder)
+                        z += 1
 
-        self.clear_gui()
+            make_gu_pl_folders()
 
-        self.label_start = QLabel('Расположите файлы в папках')
-        self.layout.addWidget(self.label_start, 0, 1)
-        self.setGeometry(30, 30, 600, 500)
-        self.setWindowTitle('Режим добавления. Шаг 3/4.')
+            self.clear_gui()
 
-        self.len_folder = 0
-        if self.type_is_2 == 'Юр.лицо':
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
-            self.len_folder = len(self.folders_gp_org)
-        else:
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr, step_down=2)
-            self.len_folder = len(self.folders_gp_entr)
+            self.label_start = QLabel('Расположите файлы в папках')
+            self.layout.addWidget(self.label_start, 0, 1)
+            self.setGeometry(30, 30, 600, 500)
+            self.setWindowTitle('Режим добавления. Шаг 3/4.')
 
-        self.arrange_color_labels(place=self.layout, total=self.len_folder)
-
-        def add_attribute_or_no():
-            result = self.check_files_in_folder()
-            if result is False:  # DEBUG (right - True)
-                self.pt4_adding_attributes_for_files_gp()
-        self.butt = QPushButton(text='Проверить файлы в папках')
-        self.butt.clicked.connect(add_attribute_or_no)
-        self.layout.addWidget(self.butt, 17, 1)
-
-        self.show()
-
-    def pt4_adding_attributes_for_files_gp(self):
-        self.clear_gui()
-
-        self.label_start = QLabel('Добавьте аттрибуты для документов')
-        self.layout.addWidget(self.label_start, 0, 0)
-        self.setGeometry(30, 30, 1100, 500)
-        self.setWindowTitle('Режим добавления. Шаг 3/4.')
-
-        if self.type_is_2 == 'Юр.лицо':
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
-            words = self.sum_gp_org_attr
-        else:
-            self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr, step_down=2)
-            words = self.sum_gp_entr_attr
-
-        def receive_list_with_len_attributes_pg():
-            self.len_attrib = []
+            self.len_folder = 0
             if self.type_is_2 == 'Юр.лицо':
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.ExtractUSRLE))  # o
-                self.len_attrib.append(len(self.SuretAgrPledg))  # o
-                self.len_attrib.append(len(self.ApprovalTran))  # o
-                self.len_attrib.append(len(self.OfficialCorr))  # Aou
-                self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                self.len_attrib.append(len(self.Adjudications))  # Aou
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
+                self.len_folder = len(self.folders_gp_org)
             else:
-                self.len_attrib.append(len(self.Questionnaire))  # Aou
-                self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
-                self.len_attrib.append(len(self.OfficialCorr))  # U
-                self.len_attrib.append(len(self.RussianPassp))  # Aou
-                self.len_attrib.append(len(self.ConsentSpou))  # Aou
-                self.len_attrib.append(len(self.Adjudications))  # Aou
-            return self.len_attrib
-        attribute_len_list = receive_list_with_len_attributes_pg()
-        data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words, attribute_len=attribute_len_list)
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr, step_down=2)
+                self.len_folder = len(self.folders_gp_entr)
 
-        def commit_info_pt4_to_db():
-            list_with_attributes = self.collect_data(data_from=data_from_attrib)
-            list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
+            self.arrange_color_labels(place=self.layout, total=self.len_folder)
 
-            # prepare to insert data (separate by column)
-            separate_list_with_attributes = []
-            start = 0
-            stop = 0
-            for item in attribute_len_list:
-                stop += item
-                separate_list_with_attributes.append(list_with_attributes[start:stop])
-                start += item
+            def add_attribute_or_no():
+                result = self.check_files_in_folder()
+                if result is True:  # DEBUG (right - True)
+                    self.pt4_adding_attributes_for_files_gp(mode='first')
 
-            # insert info in DB
-            os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
-            conn = sqlite3.connect('DATA//firstBase.sqlite')
-            cursor = conn.cursor()
+            self.butt = QPushButton(text='Проверить файлы в папках')
+            self.butt.clicked.connect(add_attribute_or_no)
+            self.layout.addWidget(self.butt, 17, 1)
 
-            if self.type_is_2 == 'Юр.лицо':  # (TO-DO) do it shorter
-                a = str(separate_list_with_attributes[0])
-                b = str(separate_list_with_attributes[1])
-                c = str(separate_list_with_attributes[2])
-                d = str(separate_list_with_attributes[3])
-                e = str(separate_list_with_attributes[4])
-                f = str(separate_list_with_attributes[5])
-                g = str(separate_list_with_attributes[6])
-                cursor.execute(
-                    'INSERT INTO DocumGuPl (Adjudications, ApprovalTran, ConsentSpou, ExtractUSRLE, OfficialCorr, '
-                    'Questionnaire, SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (a, b, c, d, e, f, g, self.last_number_id_res, self.plgutrans))
+            self.show()
+
+        if mode == 'again':
+            def make_gu_pl_folders():
+                os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+                os.chdir(str('CLIENTS//' + self.currLineAndAgreem + '//_' + self.plgutrans))
+
+                numb = 1
+                try:
+                    os.mkdir('_ДОП_' + str(numb) + '_' + self.plgutrans)
+                    name_folder = '_ДОП_' + str(numb) + '_' + self.plgutrans
+                    os.chdir(name_folder)
+                    if self.type_is_2 == 'Юр.лицо':  # and Pledgor (delete)
+                        folders = self.folders_gp_org_cut
+                    else:
+                        folders = self.folders_gp_entr_cut
+                    z = 0
+                    d = len(folders)
+                    while z != d:
+                        folder = folders[z]
+                        os.mkdir(folder)
+                        z += 1
+                except FileExistsError:
+                    have_folder = os.path.exists('_ДОП_' + str(numb) + '_' + self.plgutrans)
+
+                    while have_folder is True:
+                        numb += 1
+                        name_folder = '_ДОП_' + str(numb) + '_' + self.plgutrans
+                        have_folder = os.path.exists('_ДОП_' + str(numb) + '_' + self.plgutrans)
+
+                    if have_folder is False:
+                        os.mkdir(name_folder)
+                        os.chdir(name_folder)
+                        if self.type_is_2 == 'Юр.лицо':  # and Pledgor (delete)
+                            folders = self.folders_gp_org_cut
+                        else:
+                            folders = self.folders_gp_entr_cut
+                        z = 0
+                        d = len(folders)
+                        while z != d:
+                            folder = folders[z]
+                            os.mkdir(folder)
+                            z += 1
+
+            make_gu_pl_folders()
+
+            self.clear_gui()
+
+            self.label_start = QLabel('Расположите файлы в папках')
+            self.layout.addWidget(self.label_start, 0, 1)
+            self.setGeometry(30, 30, 600, 500)
+            self.setWindowTitle('Режим добавления. Шаг 3/4.')
+
+            self.len_folder = 0
+            if self.type_is_2 == 'Юр.лицо':
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org_cut, step_down=2)
+                self.len_folder = len(self.folders_gp_org_cut)
             else:
-                a = str(separate_list_with_attributes[0])
-                b = str(separate_list_with_attributes[1])
-                c = str(separate_list_with_attributes[2])
-                d = str(separate_list_with_attributes[3])
-                e = str(separate_list_with_attributes[4])
-                f = str(separate_list_with_attributes[5])
-                cursor.execute(
-                    'INSERT INTO DocumGuPl (Adjudications, ConsentSpou, OfficialCorr, RussianPassp, Questionnaire, '
-                    'SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    (a, b, c, d, e, f, self.last_number_id_res, self.plgutrans))
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr_cut, step_down=2)
+                self.len_folder = len(self.folders_gp_entr_cut)
 
-            conn.commit()
-            conn.close()
+            self.arrange_color_labels(place=self.layout, total=self.len_folder)
 
-            reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
-                                                         'данному залогодателю/поручителю?',
-                                         QMessageBox.Yes, QMessageBox.No)
-            if reply == QMessageBox.Yes:
-                self.pt4_put_files_gu_pl()
+            def add_attribute_or_no():
+                result = self.check_files_in_folder()
+                if result is True:  # DEBUG (right - True)
+                    self.pt4_adding_attributes_for_files_gp(mode='again')
+
+            self.butt = QPushButton(text='Проверить файлы в папках')
+            self.butt.clicked.connect(add_attribute_or_no)
+            self.layout.addWidget(self.butt, 17, 1)
+
+            self.show()
+
+    def pt4_adding_attributes_for_files_gp(self, mode):
+        self.clear_gui()
+
+        if mode == 'first':
+            self.label_start = QLabel('Добавьте аттрибуты для документов')
+            self.layout.addWidget(self.label_start, 0, 0)
+            self.setGeometry(30, 30, 1100, 500)
+            self.setWindowTitle('Режим добавления. Шаг 3/4.')
+
+            if self.type_is_2 == 'Юр.лицо':
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org, step_down=2)
+                words = self.sum_gp_org_attr
             else:
-                if self.type_g_or_p == 'Залогодатель':
-                    self.pt5_optional_adding_global_name()
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr, step_down=2)
+                words = self.sum_gp_entr_attr
+
+            def receive_list_with_len_attributes_pg():
+                self.len_attrib = []
+                if self.type_is_2 == 'Юр.лицо':
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                    self.len_attrib.append(len(self.SuretAgrPledg))  # o
+                    self.len_attrib.append(len(self.ApprovalTran))  # o
+                    self.len_attrib.append(len(self.OfficialCorr))  # Aou
+                    self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                    self.len_attrib.append(len(self.Adjudications))  # Aou
                 else:
-                    self.loop_in_guaran_pled()
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
+                    self.len_attrib.append(len(self.OfficialCorr))  # U
+                    self.len_attrib.append(len(self.RussianPassp))  # Aou
+                    self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                    self.len_attrib.append(len(self.Adjudications))  # Aou
+                return self.len_attrib
 
-        self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
-        self.butt.clicked.connect(commit_info_pt4_to_db)
-        self.layout.addWidget(self.butt, 17, 0)
+            attribute_len_list = receive_list_with_len_attributes_pg()
+            data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
+                                                       attribute_len=attribute_len_list)
+
+            def commit_info_pt4_to_db():
+                list_with_attributes = self.collect_data(data_from=data_from_attrib)
+                list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
+
+                # prepare to insert data (separate by column)
+                separate_list_with_attributes = []
+                start = 0
+                stop = 0
+                for item in attribute_len_list:
+                    stop += item
+                    separate_list_with_attributes.append(list_with_attributes[start:stop])
+                    start += item
+
+                # insert info in DB
+                os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+                conn = sqlite3.connect('DATA//firstBase.sqlite')
+                cursor = conn.cursor()
+
+                if self.type_is_2 == 'Юр.лицо':  # (TO-DO) do it shorter
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    e = str(separate_list_with_attributes[4])
+                    f = str(separate_list_with_attributes[5])
+                    g = str(separate_list_with_attributes[6])
+                    cursor.execute(
+                        'INSERT INTO DocumGuPl (Adjudications, ApprovalTran, ConsentSpou, ExtractUSRLE, OfficialCorr, '
+                        'Questionnaire, SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, g, self.last_number_id_res, self.plgutrans))
+                else:
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    e = str(separate_list_with_attributes[4])
+                    f = str(separate_list_with_attributes[5])
+                    cursor.execute(
+                        'INSERT INTO DocumGuPl (Adjudications, ConsentSpou, OfficialCorr, RussianPassp, Questionnaire, '
+                        'SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, f, self.last_number_id_res, self.plgutrans))
+
+                conn.commit()
+                conn.close()
+
+                reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
+                                                             'данному залогодателю/поручителю?',
+                                             QMessageBox.Yes, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.pt4_put_files_gu_pl(mode='again')
+                else:
+                    if self.type_g_or_p == 'Залогодатель':
+                        self.pt5_optional_adding_global_name()
+                    else:
+                        self.loop_in_guaran_pled()
+
+            self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
+            self.butt.clicked.connect(commit_info_pt4_to_db)
+            self.layout.addWidget(self.butt, 17, 0)
+
+        if mode == 'again':
+            self.label_start = QLabel('Добавьте аттрибуты для документов')
+            self.layout.addWidget(self.label_start, 0, 0)
+            self.setGeometry(30, 30, 1100, 500)
+            self.setWindowTitle('Режим добавления. Шаг 3/4.')
+
+            if self.type_is_2 == 'Юр.лицо':
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_org_cut, step_down=2)
+                words = self.sum_gp_org_attr_cut
+            else:
+                self.arrange_labels(place=self.layout, list_with_names=self.folders_gp_entr_cut, step_down=2)
+                words = self.sum_gp_entr_attr_cut
+
+            def receive_list_with_len_attributes_pg():
+                self.len_attrib = []
+                if self.type_is_2 == 'Юр.лицо':
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.ExtractUSRLE))  # o
+                    self.len_attrib.append(len(self.SuretAgrPledg))  # o
+                    self.len_attrib.append(len(self.ApprovalTran))  # o
+                    self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                else:
+                    self.len_attrib.append(len(self.Questionnaire))  # Aou
+                    self.len_attrib.append(len(self.SuretAgrPledg))  # Aou
+                    self.len_attrib.append(len(self.RussianPassp))  # Aou
+                    self.len_attrib.append(len(self.ConsentSpou))  # Aou
+                return self.len_attrib
+
+            attribute_len_list = receive_list_with_len_attributes_pg()
+            data_from_attrib = self.arrange_attributes(place=self.layout, step_down=2, list_with_words=words,
+                                                       attribute_len=attribute_len_list)
+
+            def commit_info_pt4_to_db():
+                list_with_attributes = self.collect_data(data_from=data_from_attrib)
+                list_with_attributes = self.check_stop_symbol_win(list_with_attributes)
+
+                # prepare to insert data (separate by column)
+                separate_list_with_attributes = []
+                start = 0
+                stop = 0
+                for item in attribute_len_list:
+                    stop += item
+                    separate_list_with_attributes.append(list_with_attributes[start:stop])
+                    start += item
+
+                # insert info in DB
+                os.chdir(os.path.realpath(os.path.dirname(sys.argv[0])))
+                conn = sqlite3.connect('DATA//firstBase.sqlite')
+                cursor = conn.cursor()
+
+                if self.type_is_2 == 'Юр.лицо':  # (TO-DO) do it shorter
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    e = str(separate_list_with_attributes[4])
+                    cursor.execute(
+                        'INSERT INTO DocumGuPl (ApprovalTran, ConsentSpou, ExtractUSRLE, '
+                        'Questionnaire, SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, e, self.last_number_id_res, self.plgutrans))
+                else:
+                    a = str(separate_list_with_attributes[0])
+                    b = str(separate_list_with_attributes[1])
+                    c = str(separate_list_with_attributes[2])
+                    d = str(separate_list_with_attributes[3])
+                    cursor.execute(
+                        'INSERT INTO DocumGuPl (ConsentSpou, RussianPassp, Questionnaire, '
+                        'SuretAgrPledg, idSend, PledGuarID) VALUES (?, ?, ?, ?, ?, ?)',
+                        (a, b, c, d, self.last_number_id_res, self.plgutrans))
+
+                conn.commit()
+                conn.close()
+
+                reply = QMessageBox.question(self, 'Вопрос', 'Добавить дополнительный договор к \n'
+                                                             'данному залогодателю/поручителю?',
+                                             QMessageBox.Yes, QMessageBox.No)
+                if reply == QMessageBox.Yes:
+                    self.pt4_put_files_gu_pl(mode='again')
+                else:
+                    if self.type_g_or_p == 'Залогодатель':
+                        self.pt5_optional_adding_global_name()
+                    else:
+                        self.loop_in_guaran_pled()
+
+            self.butt = QPushButton(text='Сохранить и перейти\n к следующему шагу')
+            self.butt.clicked.connect(commit_info_pt4_to_db)
+            self.layout.addWidget(self.butt, 17, 0)
 
     def pt5_optional_adding_global_name(self):
         self.clear_gui()
@@ -928,7 +1102,7 @@ class AddingMode(QDialog):
 
         def add_attribute_or_no():
             result = self.check_files_in_folder()
-            if result is False:  # DEBUG (right - True)
+            if result is True:  # DEBUG (right - True)
                 adding_attributes_for_grp_obj()
         self.butt = QPushButton(text='Проверить файлы в папках')
         self.butt.clicked.connect(add_attribute_or_no)
@@ -1275,7 +1449,6 @@ class ViewMode(QDialog, QFrame):
                        (self.position_in_lb,))  # '()' and ',' - it's important!
         curr_type_cred_line = cursor.fetchall()  # (!) think up - can possible to take arguments for chdir?
         self.curr_type_cred_line = curr_type_cred_line[0]
-        print(self.curr_type_cred_line)
 
         conn.close()
 
@@ -1948,7 +2121,7 @@ def main():
     root.butt.clicked.connect(lambda: start_mode(root, mode='search'))
     root.layout.addWidget(root.butt, 4, 1)
 
-    start_mode(root, mode='view')  # DEBUG (right - delete this row)
+    start_mode(root, mode='adding')  # DEBUG (right - delete this row)
 
     root.show()
     sys.exit(app.exec_())
@@ -1960,3 +2133,7 @@ if __name__ == "__main__":
           '\n\t\tSEARCH MODE - 10% (0% tested)'
           '\n\t\tUPDATE MODE - 40% (0% tested)\n')
     main()
+
+# тест Залог Физ - возможно не те папки
+# cм в DocumGuPl по разному значения пишутся в базу
+# Добавить к доп дог созданию папки __
